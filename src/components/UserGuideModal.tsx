@@ -22,31 +22,31 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
-      <div className="hud-glass w-full max-w-2xl max-h-[85vh] rounded-2xl border border-cyan-500/30 shadow-2xl flex flex-col overflow-hidden text-slate-200 animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/75 backdrop-blur-md">
+      <div className="hud-glass w-full max-w-2xl max-h-[88vh] rounded-2xl border border-cyan-500/30 shadow-2xl flex flex-col overflow-hidden text-slate-200 animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/60">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-900/60">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="p-2 rounded-xl bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shrink-0">
               <BookOpen size={18} />
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-white tracking-wide">Aetheria User Guide & Manual</h2>
-              <p className="text-[11px] text-slate-400 font-mono">3D Spatial Particle Laboratory & Synthesizer</p>
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-semibold text-white tracking-wide truncate">Aetheria User Guide & Manual</h2>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 font-mono truncate">3D Spatial Particle Laboratory & Synthesizer</p>
             </div>
           </div>
           <button
             id="close-user-guide-modal-btn"
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors cursor-pointer shrink-0 ml-2"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Section Navigation Tabs */}
-        <div className="flex border-b border-slate-800/80 bg-slate-950/40 px-4 py-2 overflow-x-auto space-x-1">
+        <div className="flex border-b border-slate-800/80 bg-slate-950/40 px-3 sm:px-4 py-2 overflow-x-auto space-x-1">
           {[
             { id: 'quickstart', label: 'Quick Start', icon: MousePointer },
             { id: 'forces', label: 'Force Fields', icon: Zap },
@@ -62,7 +62,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveSection(tab.id as typeof activeSection)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap cursor-pointer transition-colors ${
+                className={`flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap cursor-pointer transition-colors ${
                   isActive
                     ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 font-medium'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
@@ -76,7 +76,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
         </div>
 
         {/* Body Content */}
-        <div className="p-6 overflow-y-auto space-y-4 text-xs leading-relaxed text-slate-300 custom-scrollbar flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs leading-relaxed text-slate-300 custom-scrollbar flex-1">
           {activeSection === 'quickstart' && (
             <div className="space-y-4">
               <div className="p-3.5 rounded-xl bg-cyan-950/20 border border-cyan-500/20">
@@ -87,19 +87,19 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-mono text-slate-200 text-xs font-semibold uppercase tracking-wider">How to Navigate the 3D Space:</h4>
+                <h4 className="font-mono text-slate-200 text-xs font-semibold uppercase tracking-wider">How to Navigate the 3D Space (Mouse & Touch):</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
                   <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                    <div className="font-mono text-cyan-300 font-semibold mb-1">Orbit Rotate</div>
-                    <p className="text-slate-400">Left-click and drag across the viewport to orbit around the active topology.</p>
+                    <div className="font-mono text-cyan-300 font-semibold mb-1">Orbit / Rotate</div>
+                    <p className="text-slate-400">Desktop: Left-drag in Orbit mode.<br />Touch: 2-finger drag anywhere to rotate the 3D universe.</p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                    <div className="font-mono text-cyan-300 font-semibold mb-1">Pan View</div>
-                    <p className="text-slate-400">Right-click and drag (or hold <kbd className="px-1 bg-slate-800 rounded">Shift</kbd> + Left-click drag) to pan the camera laterally.</p>
+                    <div className="font-mono text-cyan-300 font-semibold mb-1">Force Interaction</div>
+                    <p className="text-slate-400">Desktop: Click & drag to apply force.<br />Touch: 1-finger drag directly sculpts, attracts or repels particles.</p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                    <div className="font-mono text-cyan-300 font-semibold mb-1">Zoom</div>
-                    <p className="text-slate-400">Scroll the mouse wheel or pinch trackpad to smoothly zoom in and out.</p>
+                    <div className="font-mono text-cyan-300 font-semibold mb-1">Zoom View</div>
+                    <p className="text-slate-400">Desktop: Scroll mouse wheel.<br />Touch: 2-finger pinch in or out to smoothly scale camera distance.</p>
                   </div>
                 </div>
               </div>

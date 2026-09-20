@@ -10,6 +10,9 @@ import {
   RefreshCw,
   Type,
   Dices,
+  Mic,
+  MicOff,
+  Volume2,
 } from 'lucide-react';
 import { ParticleConfig, AudioConfig, ParametricParams } from '../types';
 
@@ -19,6 +22,8 @@ interface KineticInspectorProps {
   onRebuildParticles: () => void;
   audioConfig: AudioConfig;
   onAudioChange: (cfg: Partial<AudioConfig>) => void;
+  micActive?: boolean;
+  onToggleMic?: () => void;
   isOpen: boolean;
   onToggleOpen: () => void;
   onOpenShapeStudio: () => void;
@@ -31,6 +36,8 @@ export const KineticInspector: React.FC<KineticInspectorProps> = ({
   onRebuildParticles,
   audioConfig,
   onAudioChange,
+  micActive = false,
+  onToggleMic,
   isOpen,
   onToggleOpen,
   onOpenShapeStudio,
@@ -40,8 +47,8 @@ export const KineticInspector: React.FC<KineticInspectorProps> = ({
 
   return (
     <div
-      className={`absolute right-3 top-16 bottom-20 z-20 flex transition-all duration-300 pointer-events-none ${
-        isOpen ? 'translate-x-0' : 'translate-x-[calc(100%-12px)]'
+      className={`fixed sm:absolute right-0 sm:right-3 top-14 sm:top-16 bottom-24 sm:bottom-20 z-20 flex items-center transition-transform duration-300 pointer-events-none ${
+        isOpen ? 'translate-x-0' : 'translate-x-[calc(100%-36px)]'
       }`}
     >
       {/* Collapse / Expand Tab Button */}
@@ -49,13 +56,22 @@ export const KineticInspector: React.FC<KineticInspectorProps> = ({
         id="kinetic-inspector-toggle-btn"
         type="button"
         onClick={onToggleOpen}
-        className="pointer-events-auto self-center mr-1 hud-glass p-1.5 rounded-l-lg text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer border-r-0"
-        title={isOpen ? 'Collapse Inspector' : 'Expand Inspector'}
+        className="pointer-events-auto hud-glass py-3.5 px-1.5 sm:px-2 rounded-l-xl text-slate-300 hover:text-cyan-300 transition-colors cursor-pointer border-r-0 border border-cyan-500/30 flex flex-col items-center justify-center space-y-1 shadow-xl bg-slate-950/80 min-h-[48px] min-w-[34px] group"
+        title={isOpen ? 'Collapse Inspector' : 'Expand Parametric & Physics Inspector'}
       >
-        {isOpen ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        {isOpen ? (
+          <ChevronRight size={16} />
+        ) : (
+          <ChevronLeft size={16} className="text-cyan-400 group-hover:scale-110 transition-transform" />
+        )}
+        {!isOpen && (
+          <span className="text-[9px] font-mono tracking-widest text-cyan-400/80 [writing-mode:vertical-lr] uppercase select-none hidden sm:inline">
+            Params
+          </span>
+        )}
       </button>
 
-      <div className="hud-glass rounded-2xl p-3.5 w-72 flex flex-col justify-between overflow-y-auto pointer-events-auto border border-cyan-500/20 shadow-2xl">
+      <div className="hud-glass rounded-l-2xl sm:rounded-2xl p-3.5 w-72 max-w-[80vw] h-full flex flex-col justify-between overflow-y-auto pointer-events-auto border border-cyan-500/20 shadow-2xl">
         <div>
           {/* Header & Tabs */}
           <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-700/50">
@@ -137,14 +153,14 @@ export const KineticInspector: React.FC<KineticInspectorProps> = ({
                     type="text"
                     maxLength={14}
                     value={particleConfig.customText}
-                    onChange={(e) => onParticleChange({ customText: e.target.value })}
+                    onChange={(e) => onParticleChange({ customText: e.target.value, topology: 'text_glyph' })}
                     placeholder="e.g. HACKATHON"
                     className="flex-1 px-2.5 py-1.5 rounded-lg bg-slate-950/80 border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-cyan-400"
                   />
                   <button
                     id="inspector-apply-text-btn"
                     type="button"
-                    onClick={() => onParticleChange({ topology: 'text_glyph' })}
+                    onClick={() => onParticleChange({ topology: 'text_glyph', customText: particleConfig.customText })}
                     className="px-2.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono font-semibold text-[11px] cursor-pointer"
                   >
                     Morph
@@ -515,6 +531,92 @@ export const KineticInspector: React.FC<KineticInspectorProps> = ({
           {/* TAB 3: HARMONICS / AUDIO */}
           {activeTab === 'synth' && (
             <div className="space-y-3 text-xs">
+              {/* Microphone Audio Reactivity Control */}
+              <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-1.5">
+                    {micActive ? (
+                      <Mic size={14} className="text-emerald-400" />
+                    ) : (
+                      <MicOff size={14} className="text-slate-400" />
+                    )}
+                    <span className="font-mono text-[11px] font-semibold text-slate-200">
+                      Live Mic Reactivity
+                    </span>
+                  </div>
+                  <span
+                    className={`text-[9px] font-mono px-1.5 py-0.5 rounded uppercase font-semibold ${
+                      micActive
+                        ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/40'
+                        : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    {micActive ? 'Active' : 'Standby'}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 leading-tight">
+                  Pulses particle volume, frequency swirl, and luminous shimmer in real-time to your voice, beats, or ambient sound.
+                </p>
+                {onToggleMic && (
+                  <button
+                    id="inspector-toggle-mic-btn"
+                    type="button"
+                    onClick={onToggleMic}
+                    className={`w-full py-1.5 px-2 rounded-lg text-xs font-mono font-medium transition-colors cursor-pointer flex items-center justify-center space-x-1.5 ${
+                      micActive
+                        ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40'
+                        : 'bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700'
+                    }`}
+                  >
+                    {micActive ? <MicOff size={13} /> : <Mic size={13} />}
+                    <span>{micActive ? 'Disable Microphone' : 'Enable Live Mic Reactivity'}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Master Volume */}
+              <div>
+                <div className="flex justify-between items-center text-slate-300 mb-1">
+                  <span className="font-mono text-[11px] flex items-center gap-1">
+                    <Volume2 size={12} className="text-indigo-400" />
+                    Master Synth Volume
+                  </span>
+                  <span className="font-mono text-[10px] text-indigo-300">
+                    {(audioConfig.volume * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <input
+                  id="param-synth-master-vol"
+                  type="range"
+                  min="0.0"
+                  max="1.0"
+                  step="0.05"
+                  value={audioConfig.volume}
+                  onChange={(e) => onAudioChange({ volume: parseFloat(e.target.value) })}
+                  className="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              {/* Drone Volume */}
+              <div>
+                <div className="flex justify-between items-center text-slate-300 mb-1">
+                  <span className="font-mono text-[11px]">Sub-Drone Level</span>
+                  <span className="font-mono text-[10px] text-indigo-300">
+                    {((audioConfig.droneGain ?? 0.5) * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <input
+                  id="param-synth-drone-vol"
+                  type="range"
+                  min="0.0"
+                  max="1.0"
+                  step="0.05"
+                  value={audioConfig.droneGain ?? 0.5}
+                  onChange={(e) => onAudioChange({ droneGain: parseFloat(e.target.value) })}
+                  className="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                />
+              </div>
+
               <div>
                 <span className="font-mono text-[11px] text-slate-300 block mb-1.5">
                   Generative Scale

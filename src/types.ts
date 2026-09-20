@@ -79,6 +79,7 @@ export interface ParticleConfig {
 export interface AudioConfig {
   enabled: boolean;
   volume: number;
+  droneGain?: number;
   droneFrequency: number;
   scale: 'celestial' | 'dorian' | 'lydian' | 'akebono' | 'cosmic_pentatonic';
   micReactive: boolean;

@@ -29,6 +29,7 @@ interface ShapeSculptorStudioProps {
   onSelectTopology: (t: TopologyType) => void;
   customText: string;
   onChangeText: (text: string) => void;
+  onFrameText?: () => void;
   parametric: ParametricParams;
   onChangeParametric: (p: Partial<ParametricParams>) => void;
   onMutateInfinite: () => void;
@@ -84,6 +85,7 @@ export const ShapeSculptorStudio: React.FC<ShapeSculptorStudioProps> = ({
   onSelectTopology,
   customText,
   onChangeText,
+  onFrameText,
   parametric,
   onChangeParametric,
   onMutateInfinite,
@@ -103,27 +105,28 @@ export const ShapeSculptorStudio: React.FC<ShapeSculptorStudioProps> = ({
     if (!inputText.trim()) return;
     onChangeText(inputText.trim());
     onSelectTopology('text_glyph');
+    onFrameText?.();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-3 sm:p-6 animate-in fade-in">
       <div className="hud-glass rounded-2xl max-w-3xl w-full max-h-[88vh] flex flex-col border border-cyan-500/30 shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-950/40">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+        <div className="p-3 sm:p-4 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-950/40">
+          <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0">
+            <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shrink-0">
               <Sparkles size={18} />
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-base font-semibold text-slate-100 font-mono tracking-tight">
-                  Infinite Shape Sculptor Studio
+            <div className="min-w-0">
+              <div className="flex items-center space-x-1.5 sm:space-x-2 flex-wrap">
+                <span className="text-sm sm:text-base font-semibold text-slate-100 font-mono tracking-tight truncate">
+                  Shape Sculptor Studio
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                  Unlimited Morphing
+                <span className="text-[9px] sm:text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
+                  Infinite Morphing
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 hidden sm:block">
                 Transform 3D particles into custom text, infinite mathematical mutations, parametric formulas, or freehand 3D sculptures.
               </p>
             </div>
@@ -132,7 +135,7 @@ export const ShapeSculptorStudio: React.FC<ShapeSculptorStudioProps> = ({
             id="close-shape-studio-btn"
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 ml-2"
           >
             <X size={18} />
           </button>
@@ -196,6 +199,18 @@ export const ShapeSculptorStudio: React.FC<ShapeSculptorStudioProps> = ({
                   >
                     Morph into 3D Text
                   </button>
+                  {onFrameText && (
+                    <button
+                      id="frame-text-camera-btn"
+                      type="button"
+                      onClick={onFrameText}
+                      title="Auto-align camera to face 3D text"
+                      className="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-mono text-xs transition-colors cursor-pointer flex items-center space-x-1.5"
+                    >
+                      <Compass size={14} />
+                      <span className="hidden sm:inline">Frame Camera</span>
+                    </button>
+                  )}
                 </form>
 
                 <div className="mt-3">
@@ -212,10 +227,11 @@ export const ShapeSculptorStudio: React.FC<ShapeSculptorStudioProps> = ({
                           setInputText(txt);
                           onChangeText(txt);
                           onSelectTopology('text_glyph');
+                          onFrameText?.();
                         }}
                         className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-colors cursor-pointer border ${
                           currentTopology === 'text_glyph' && customText === txt
-                            ? 'bg-cyan-500/25 text-cyan-200 border-cyan-400'
+                            ? 'bg-cyan-500/25 text-cyan-200 border-cyan-400 shadow-sm shadow-cyan-500/30'
                             : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700'
                         }`}
                       >

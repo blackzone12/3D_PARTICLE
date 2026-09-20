@@ -77,6 +77,20 @@ export class ParticleUniverse {
   public onTelemetryUpdate?: (data: TelemetryData) => void;
   public onAudioModulation?: (normX: number, kineticEnergy: number, spatialEntropy: number) => void;
 
+  // Audio reactivity
+  public audioReactivity: { bass: number; mid: number; high: number; level: number } = {
+    bass: 0,
+    mid: 0,
+    high: 0,
+    level: 0,
+  };
+  public isAudioReactive: boolean = false;
+  private smoothedBass: number = 0;
+  private smoothedMid: number = 0;
+  private smoothedHigh: number = 0;
+  private smoothedLevel: number = 0;
+  private lastAudioBeatTime: number = 0;
+
   constructor(container: HTMLElement, config: ParticleConfig) {
     this.container = container;
     this.config = config;
@@ -232,6 +246,29 @@ export class ParticleUniverse {
       this.targetColors[i3 + 1] = tempCol.g;
       this.targetColors[i3 + 2] = tempCol.b;
     }
+
+    // When switching to 3D text glyph, auto-align camera for optimal legibility
+    if (this.config.topology === 'text_glyph') {
+      if (Math.abs(this.targetRotX) > 0.4 || Math.abs(this.targetRotY) > 0.4) {
+        this.targetRotX = 0.12;
+        this.targetRotY = 0.0;
+        this.targetCamDistance = 38;
+        this.targetCamPan.set(0, 0, 0);
+      }
+    }
+  }
+
+  public updateCustomText(newText: string): void {
+    this.config.customText = newText;
+    this.config.topology = 'text_glyph';
+    this.morphToTopology('text_glyph');
+  }
+
+  public frameTextCamera(): void {
+    this.targetRotX = 0.12;
+    this.targetRotY = 0.0;
+    this.targetCamDistance = 38;
+    this.targetCamPan.set(0, 0, 0);
   }
 
   public mutateInfiniteShape(): any {
@@ -268,10 +305,22 @@ export class ParticleUniverse {
     this.morphToTopology('drawn_3d');
   }
 
+  public setAudioReactivity(
+    data: { bass: number; mid: number; high: number; level: number },
+    active: boolean
+  ): void {
+    this.audioReactivity = data;
+    this.isAudioReactive = active;
+  }
+
   public updateTheme(newTheme: ParticleConfig['colorTheme']): void {
     this.config.colorTheme = newTheme;
     const count = this.config.count;
-    const topo = generateTopology(this.config.topology, count);
+    const topo = generateTopology(this.config.topology, count, 24, {
+      customText: this.config.customText,
+      parametric: this.config.parametric,
+      drawnPoints: this.drawnPoints,
+    });
     const tempCol = new THREE.Color();
 
     const tData = COLOR_THEMES[newTheme];
@@ -396,6 +445,9 @@ export class ParticleUniverse {
     const onPointerUp = () => {
       this.isPointerDown = false;
       this.isInteracting = false;
+      if (this.interactionMode === 'draw_3d' && this.drawnPoints.length >= 2) {
+        this.morphToTopology('drawn_3d');
+      }
     };
 
     const onWheel = (e: WheelEvent) => {
@@ -408,9 +460,78 @@ export class ParticleUniverse {
       e.preventDefault(); // Prevent right-click menu for panning
     };
 
+    // Multi-touch gestures for mobile & tablet (pinch-to-zoom, two-finger orbit)
+    let touchCount = 0;
+    let prevTouchDist = 0;
+    let prevTouchMidX = 0;
+    let prevTouchMidY = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      touchCount = e.touches.length;
+      if (touchCount === 2) {
+        this.isInteracting = false;
+        const t0 = e.touches[0];
+        const t1 = e.touches[1];
+        prevTouchDist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+        prevTouchMidX = (t0.clientX + t1.clientX) / 2;
+        prevTouchMidY = (t0.clientY + t1.clientY) / 2;
+      } else if (touchCount === 1) {
+        const t0 = e.touches[0];
+        this.lastPointerX = t0.clientX;
+        this.lastPointerY = t0.clientY;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        // Prevent page zoom on mobile
+        e.preventDefault();
+        this.isInteracting = false;
+        const t0 = e.touches[0];
+        const t1 = e.touches[1];
+
+        // 1. Pinch-to-zoom
+        const currDist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+        if (prevTouchDist > 0) {
+          const pinchDelta = (prevTouchDist - currDist) * 0.12;
+          this.targetCamDistance = Math.max(6, Math.min(110, this.targetCamDistance + pinchDelta));
+        }
+        prevTouchDist = currDist;
+
+        // 2. Two-finger orbit rotation
+        const currMidX = (t0.clientX + t1.clientX) / 2;
+        const currMidY = (t0.clientY + t1.clientY) / 2;
+        if (prevTouchMidX !== 0 || prevTouchMidY !== 0) {
+          const dMidX = currMidX - prevTouchMidX;
+          const dMidY = currMidY - prevTouchMidY;
+          this.targetRotY += dMidX * 0.008;
+          this.targetRotX = Math.max(
+            -Math.PI / 2 + 0.05,
+            Math.min(Math.PI / 2 - 0.05, this.targetRotX + dMidY * 0.008)
+          );
+        }
+        prevTouchMidX = currMidX;
+        prevTouchMidY = currMidY;
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      touchCount = e.touches.length;
+      if (touchCount < 2) {
+        prevTouchDist = 0;
+        prevTouchMidX = 0;
+        prevTouchMidY = 0;
+      }
+    };
+
+    dom.style.touchAction = 'none';
     dom.addEventListener('pointermove', onPointerMove);
     dom.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointerup', onPointerUp);
+    dom.addEventListener('touchstart', onTouchStart, { passive: false });
+    dom.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('touchcancel', onTouchEnd);
     dom.addEventListener('wheel', onWheel, { passive: false });
     dom.addEventListener('contextmenu', onContextMenu);
 
@@ -533,6 +654,57 @@ export class ParticleUniverse {
     const mouseY = this.mouse3D.y;
     const mouseZ = this.mouse3D.z;
 
+    const isTextMode = this.config.topology === 'text_glyph';
+    // For 3D text: damp curl turbulence so letterforms remain sharp, solid and legible
+    const effectiveNoise = isTextMode ? noiseStrength * 0.08 : noiseStrength;
+    const effectiveMorph = isTextMode ? 14.0 : 8.0;
+
+    // Real-time audio reactivity smoothing and beat detection
+    let bassPulse = 0;
+    let midSwirl = 0;
+    let highShimmer = 0;
+    let audioGlow = 0;
+
+    if (this.isAudioReactive && this.audioReactivity.level > 0.005) {
+      const rawBass = this.audioReactivity.bass;
+      const rawMid = this.audioReactivity.mid;
+      const rawHigh = this.audioReactivity.high;
+      const rawLevel = this.audioReactivity.level;
+
+      this.smoothedBass += (rawBass - this.smoothedBass) * Math.min(1.0, dt * 14.0);
+      this.smoothedMid += (rawMid - this.smoothedMid) * Math.min(1.0, dt * 10.0);
+      this.smoothedHigh += (rawHigh - this.smoothedHigh) * Math.min(1.0, dt * 16.0);
+      this.smoothedLevel += (rawLevel - this.smoothedLevel) * Math.min(1.0, dt * 12.0);
+
+      bassPulse = this.smoothedBass;
+      midSwirl = this.smoothedMid;
+      highShimmer = this.smoothedHigh;
+      audioGlow = this.smoothedLevel;
+
+      // Dynamic Beat / Hand-clap / Kick Ripple Shockwave
+      if (rawBass > 0.42 && (rawBass - this.smoothedBass) > 0.12 && (time - this.lastAudioBeatTime > 0.28)) {
+        this.lastAudioBeatTime = time;
+        this.shockwaves.push({
+          origin: new THREE.Vector3(0, 0, 0),
+          radius: 0.2,
+          maxRadius: 36.0,
+          speed: 38.0,
+          strength: 24.0 * rawBass,
+        });
+      }
+    } else {
+      this.smoothedBass *= 0.88;
+      this.smoothedMid *= 0.88;
+      this.smoothedHigh *= 0.88;
+      this.smoothedLevel *= 0.88;
+    }
+
+    // Dynamic point size pulse with audio
+    if (this.material && this.isAudioReactive) {
+      const sizeMultiplier = 1.0 + this.smoothedBass * 0.4 + this.smoothedHigh * 0.25;
+      this.material.size = this.config.size * sizeMultiplier;
+    }
+
     let totalKineticEnergy = 0;
 
     for (let i = 0; i < count; i++) {
@@ -554,21 +726,44 @@ export class ParticleUniverse {
       const diffY = ty - py;
       const diffZ = tz - pz;
 
-      vx += diffX * morphSpeed * 8.0 * dt;
-      vy += diffY * morphSpeed * 8.0 * dt;
-      vz += diffZ * morphSpeed * 8.0 * dt;
+      vx += diffX * morphSpeed * effectiveMorph * dt;
+      vy += diffY * morphSpeed * effectiveMorph * dt;
+      vz += diffZ * morphSpeed * effectiveMorph * dt;
 
       // 2. 3D Curl Noise Turbulence field
-      if (noiseStrength > 0.01) {
+      if (effectiveNoise > 0.005) {
         const freq = 0.08;
         const phase = time * 0.8 + i * 0.002;
         const nx = Math.sin(py * freq + phase) * Math.cos(pz * freq);
         const ny = Math.cos(px * freq + phase) * Math.sin(pz * freq);
         const nz = Math.sin(px * freq + phase) * Math.cos(py * freq);
 
-        vx += nx * noiseStrength * 12.0 * dt;
-        vy += ny * noiseStrength * 12.0 * dt;
-        vz += nz * noiseStrength * 12.0 * dt;
+        vx += nx * effectiveNoise * 12.0 * dt;
+        vy += ny * effectiveNoise * 12.0 * dt;
+        vz += nz * effectiveNoise * 12.0 * dt;
+      }
+
+      // 2b. Microphone Audio Forces (Volumetric Bass Pulse, Mid Swirl, High Shimmer)
+      if (bassPulse > 0.03) {
+        const pDist = Math.sqrt(px * px + py * py + pz * pz) + 0.1;
+        const radialBass = bassPulse * 16.0 * Math.max(0.1, 1.0 - pDist / 38.0);
+        vx += (px / pDist) * radialBass * dt;
+        vy += (py / pDist) * radialBass * dt;
+        vz += (pz / pDist) * radialBass * dt;
+      }
+
+      if (midSwirl > 0.04) {
+        const swirlPower = midSwirl * 8.0;
+        vx += -py * 0.08 * swirlPower * dt;
+        vy += px * 0.08 * swirlPower * dt;
+        vz += Math.sin(time * 6.0 + px * 0.25) * swirlPower * 0.3 * dt;
+      }
+
+      if (highShimmer > 0.05) {
+        const jitter = highShimmer * 5.0;
+        vx += (Math.random() - 0.5) * jitter * dt;
+        vy += (Math.random() - 0.5) * jitter * dt;
+        vz += (Math.random() - 0.5) * jitter * dt;
       }
 
       // 3. Mouse 3D Gravitational / Kinetic Field
@@ -640,10 +835,11 @@ export class ParticleUniverse {
       const speedSq = vx * vx + vy * vy + vz * vz;
       totalKineticEnergy += speedSq;
 
-      // Dynamic color lerp towards target with bounded kinetic excitation
+      // Dynamic color lerp towards target with bounded kinetic excitation & audio luminescence
       const speedNorm = Math.min(1.0, Math.sqrt(speedSq) * 0.12);
       const colSpeed = 4.0 * dt;
-      const bright = this.config.brightness ?? 0.7;
+      const baseBright = this.config.brightness ?? 0.7;
+      const bright = baseBright * (1.0 + audioGlow * 0.45 + highShimmer * 0.35);
 
       const targetR = Math.min(1.0, this.targetColors[i3] * bright + speedNorm * 0.06);
       const targetG = Math.min(1.0, this.targetColors[i3 + 1] * bright + speedNorm * 0.05);

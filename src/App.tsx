@@ -15,7 +15,6 @@ import { HeaderBar } from './components/HeaderBar';
 import { TopologyDock } from './components/TopologyDock';
 import { KineticInspector } from './components/KineticInspector';
 import { InteractionDock } from './components/InteractionDock';
-import { TelemetryHUD } from './components/TelemetryHUD';
 import { SnapshotModal } from './components/SnapshotModal';
 import { ShapeSculptorStudio } from './components/ShapeSculptorStudio';
 import { UserGuideModal } from './components/UserGuideModal';
@@ -56,6 +55,7 @@ const INITIAL_PARTICLE_CONFIG: ParticleConfig = {
 const INITIAL_AUDIO_CONFIG: AudioConfig = {
   enabled: false,
   volume: 0.18,
+  droneGain: 0.5,
   droneFrequency: 65.41, // C2
   scale: 'celestial',
   micReactive: false,
@@ -98,11 +98,32 @@ export default function App() {
   const [cameraMode, setCameraMode] = useState<CameraMode>('free');
   const [micActive, setMicActive] = useState(false);
   const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null);
-  const [isDockOpen, setIsDockOpen] = useState(true);
-  const [isInspectorOpen, setIsInspectorOpen] = useState(true);
+  const [isDockOpen, setIsDockOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1280);
   const [isTouring, setIsTouring] = useState(false);
   const [isShapeStudioOpen, setIsShapeStudioOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+
+  // Responsive dock toggles preventing mutual screen occlusion
+  const handleToggleDock = () => {
+    setIsDockOpen((prev) => {
+      const next = !prev;
+      if (next && typeof window !== 'undefined' && window.innerWidth < 1024) {
+        setIsInspectorOpen(false);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleInspector = () => {
+    setIsInspectorOpen((prev) => {
+      const next = !prev;
+      if (next && typeof window !== 'undefined' && window.innerWidth < 1024) {
+        setIsDockOpen(false);
+      }
+      return next;
+    });
+  };
 
   const [telemetry, setTelemetry] = useState<TelemetryData>({
     fps: 60,
@@ -125,9 +146,14 @@ export default function App() {
     const audio = new KineticAudioEngine(audioConfig);
     audioRef.current = audio;
 
-    // Connect spatial audio feedback
+    // Connect bidirectional spatial audio feedback and live microphone reactivity
     universe.onAudioModulation = (normX, kinetic, entropy) => {
-      audio.modulateFromKineticField(normX, kinetic, entropy);
+      if (audioRef.current) {
+        audioRef.current.modulateFromKineticField(normX, kinetic, entropy);
+        const isMic = audioRef.current.isMicActive();
+        const react = audioRef.current.getAudioReactivity();
+        universe.setAudioReactivity(react, isMic);
+      }
     };
 
     universe.onTelemetryUpdate = (data) => {
@@ -181,9 +207,22 @@ export default function App() {
         if (cfg.brightness !== undefined) {
           universeRef.current.setBrightness(cfg.brightness);
         }
+        if (cfg.customText !== undefined) {
+          if (next.topology === 'text_glyph') {
+            universeRef.current.updateCustomText(cfg.customText);
+          }
+        }
+        if (cfg.topology !== undefined && cfg.customText === undefined) {
+          universeRef.current.morphToTopology(cfg.topology);
+        }
       }
       return next;
     });
+  }, []);
+
+  // Frame text camera
+  const handleFrameText = useCallback(() => {
+    universeRef.current?.frameTextCamera();
   }, []);
 
   // Topology selection
@@ -310,7 +349,23 @@ export default function App() {
         onScreenshot={handleScreenshot}
         onOpenShapeStudio={() => setIsShapeStudioOpen(true)}
         onOpenGuide={() => setIsGuideOpen(true)}
+        telemetry={telemetry}
+        isTouring={isTouring}
+        onToggleTour={() => setIsTouring(!isTouring)}
       />
+
+      {/* Mobile Backdrop Scrim when a drawer is open */}
+      {(isDockOpen || isInspectorOpen) && (
+        <div
+          id="mobile-drawer-backdrop-scrim"
+          className="fixed inset-0 z-15 bg-black/40 backdrop-blur-[2px] md:hidden cursor-pointer pointer-events-auto"
+          onClick={() => {
+            setIsDockOpen(false);
+            setIsInspectorOpen(false);
+          }}
+          title="Tap to close drawer"
+        />
+      )}
 
       {/* Left Dock: Manifold & Color Palette Selector */}
       <TopologyDock
@@ -319,7 +374,7 @@ export default function App() {
         currentColorTheme={particleConfig.colorTheme}
         onSelectColorTheme={handleSelectColorTheme}
         isOpen={isDockOpen}
-        onToggleOpen={() => setIsDockOpen(!isDockOpen)}
+        onToggleOpen={handleToggleDock}
         onOpenShapeStudio={() => setIsShapeStudioOpen(true)}
         onMutateInfinite={handleMutateInfinite}
       />
@@ -331,8 +386,10 @@ export default function App() {
         onRebuildParticles={handleRebuildParticles}
         audioConfig={audioConfig}
         onAudioChange={handleAudioChange}
+        micActive={micActive}
+        onToggleMic={handleToggleMic}
         isOpen={isInspectorOpen}
-        onToggleOpen={() => setIsInspectorOpen(!isInspectorOpen)}
+        onToggleOpen={handleToggleInspector}
         onOpenShapeStudio={() => setIsShapeStudioOpen(true)}
         onMutateInfinite={handleMutateInfinite}
       />
@@ -347,9 +404,6 @@ export default function App() {
         onToggleTour={() => setIsTouring(!isTouring)}
       />
 
-      {/* Real-time Telemetry & Performance Gauges */}
-      <TelemetryHUD telemetry={telemetry} />
-
       {/* Infinite Shape Sculptor Studio Modal */}
       <ShapeSculptorStudio
         isOpen={isShapeStudioOpen}
@@ -362,6 +416,7 @@ export default function App() {
           universeRef.current?.morphToTopology('text_glyph');
           audioRef.current?.triggerHarmonicChime(0.8, 2);
         }}
+        onFrameText={handleFrameText}
         parametric={particleConfig.parametric}
         onChangeParametric={(p) => {
           const next = { ...particleConfig.parametric, ...p };

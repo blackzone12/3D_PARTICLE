@@ -65,11 +65,11 @@ export const TopologyDock: React.FC<TopologyDockProps> = ({
 }) => {
   return (
     <div
-      className={`absolute left-3 top-16 bottom-20 z-20 flex transition-all duration-300 pointer-events-none ${
-        isOpen ? 'translate-x-0' : '-translate-x-[calc(100%-12px)]'
+      className={`fixed sm:absolute left-0 sm:left-3 top-14 sm:top-16 bottom-24 sm:bottom-20 z-20 flex items-center transition-transform duration-300 pointer-events-none ${
+        isOpen ? 'translate-x-0' : '-translate-x-[calc(100%-36px)]'
       }`}
     >
-      <div className="hud-glass rounded-2xl p-3 w-64 flex flex-col justify-between overflow-y-auto pointer-events-auto border border-cyan-500/20 shadow-2xl">
+      <div className="hud-glass rounded-r-2xl sm:rounded-2xl p-3 w-64 max-w-[80vw] h-full flex flex-col justify-between overflow-y-auto pointer-events-auto border border-cyan-500/20 shadow-2xl">
         {/* Top: Manifolds */}
         <div>
           {/* Infinite Shapes Banner Button */}
@@ -214,10 +214,19 @@ export const TopologyDock: React.FC<TopologyDockProps> = ({
         id="topology-dock-toggle-btn"
         type="button"
         onClick={onToggleOpen}
-        className="pointer-events-auto self-center ml-1 hud-glass p-1.5 rounded-r-lg text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer border-l-0"
-        title={isOpen ? 'Collapse Manifold Dock' : 'Expand Manifold Dock'}
+        className="pointer-events-auto hud-glass py-3.5 px-1.5 sm:px-2 rounded-r-xl text-slate-300 hover:text-cyan-300 transition-colors cursor-pointer border-l-0 border border-cyan-500/30 flex flex-col items-center justify-center space-y-1 shadow-xl bg-slate-950/80 min-h-[48px] min-w-[34px] group"
+        title={isOpen ? 'Collapse Manifold Dock' : 'Expand Manifold & Theme Dock'}
       >
-        {isOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+        {isOpen ? (
+          <ChevronLeft size={16} />
+        ) : (
+          <ChevronRight size={16} className="text-cyan-400 group-hover:scale-110 transition-transform" />
+        )}
+        {!isOpen && (
+          <span className="text-[9px] font-mono tracking-widest text-cyan-400/80 [writing-mode:vertical-lr] uppercase select-none hidden sm:inline">
+            Shapes
+          </span>
+        )}
       </button>
     </div>
   );

@@ -121,6 +121,10 @@ export class KineticAudioEngine {
       this.droneOsc1.frequency.setTargetAtTime(newConfig.droneFrequency, t, 0.1);
       this.droneOsc2.frequency.setTargetAtTime(newConfig.droneFrequency * 1.501, t, 0.1);
     }
+
+    if (this.droneGain && newConfig.droneGain !== undefined) {
+      this.droneGain.gain.setTargetAtTime(newConfig.droneGain * 0.16, t, 0.05);
+    }
   }
 
   /**
@@ -237,7 +241,7 @@ export class KineticAudioEngine {
       const source = this.ctx!.createMediaStreamSource(stream);
       this.analyser = this.ctx!.createAnalyser();
       this.analyser.fftSize = 256;
-      this.analyser.smoothingTimeConstant = 0.8;
+      this.analyser.smoothingTimeConstant = 0.55;
       this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
 
       source.connect(this.analyser);
@@ -249,11 +253,16 @@ export class KineticAudioEngine {
     }
   }
 
+  public isMicActive(): boolean {
+    return this.micStream !== null && this.micStream.active;
+  }
+
   /**
    * Sample microphone audio frequency bands (bass, mids, highs)
+   * With adaptive dynamic range gain so quiet ambient audio/speech still produces clear reactivity
    */
   public getAudioReactivity(): { bass: number; mid: number; high: number; level: number } {
-    if (!this.analyser || !this.freqData) {
+    if (!this.analyser || !this.freqData || !this.micStream || !this.micStream.active) {
       return { bass: 0, mid: 0, high: 0, level: 0 };
     }
 
@@ -261,8 +270,8 @@ export class KineticAudioEngine {
     const bins = this.freqData.length;
     let bSum = 0, mSum = 0, hSum = 0, tot = 0;
 
-    const bEnd = Math.floor(bins * 0.12);
-    const mEnd = Math.floor(bins * 0.5);
+    const bEnd = Math.max(1, Math.floor(bins * 0.12));
+    const mEnd = Math.max(bEnd + 1, Math.floor(bins * 0.48));
 
     for (let i = 0; i < bins; i++) {
       const v = this.freqData[i] / 255.0;
@@ -272,12 +281,16 @@ export class KineticAudioEngine {
       else hSum += v;
     }
 
-    return {
-      bass: bSum / Math.max(1, bEnd),
-      mid: mSum / Math.max(1, mEnd - bEnd),
-      high: hSum / Math.max(1, bins - mEnd),
-      level: tot / bins,
-    };
+    // Apply gentle adaptive gain curve for vivid particle dynamics
+    const rawLevel = tot / bins;
+    const gain = rawLevel > 0.01 ? Math.min(2.4, 1.0 / Math.sqrt(Math.max(0.04, rawLevel))) : 1.0;
+
+    const bass = Math.min(1.0, (bSum / bEnd) * gain);
+    const mid = Math.min(1.0, (mSum / (mEnd - bEnd)) * gain);
+    const high = Math.min(1.0, (hSum / (bins - mEnd)) * gain);
+    const level = Math.min(1.0, rawLevel * gain);
+
+    return { bass, mid, high, level };
   }
 
   public dispose(): void {
