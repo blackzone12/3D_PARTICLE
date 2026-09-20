@@ -10,6 +10,7 @@ import {
   Sparkles,
   Eye,
   Radio,
+  HelpCircle,
 } from 'lucide-react';
 import { CameraMode, AudioConfig } from '../types';
 
@@ -22,6 +23,7 @@ interface HeaderBarProps {
   onCameraChange: (mode: CameraMode) => void;
   onScreenshot: () => void;
   onOpenShapeStudio: () => void;
+  onOpenGuide: () => void;
 }
 
 export const HeaderBar: React.FC<HeaderBarProps> = ({
@@ -33,6 +35,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   onCameraChange,
   onScreenshot,
   onOpenShapeStudio,
+  onOpenGuide,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -162,6 +165,17 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
       {/* Right Utility Buttons */}
       <div className="pointer-events-auto flex items-center space-x-2">
+        <button
+          id="header-user-guide-btn"
+          type="button"
+          onClick={onOpenGuide}
+          className="hud-glass px-2.5 py-2 rounded-xl text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40 transition-colors cursor-pointer flex items-center space-x-1.5"
+          title="User Readme & Interaction Manual"
+        >
+          <HelpCircle size={15} className="text-cyan-300" />
+          <span className="text-xs font-mono hidden sm:inline">Guide</span>
+        </button>
+
         <button
           id="screenshot-capture-btn"
           type="button"

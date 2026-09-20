@@ -18,6 +18,7 @@ import { InteractionDock } from './components/InteractionDock';
 import { TelemetryHUD } from './components/TelemetryHUD';
 import { SnapshotModal } from './components/SnapshotModal';
 import { ShapeSculptorStudio } from './components/ShapeSculptorStudio';
+import { UserGuideModal } from './components/UserGuideModal';
 
 const INITIAL_PARAMETRIC: ParametricParams = {
   m: 6,
@@ -101,6 +102,7 @@ export default function App() {
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
   const [isTouring, setIsTouring] = useState(false);
   const [isShapeStudioOpen, setIsShapeStudioOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   const [telemetry, setTelemetry] = useState<TelemetryData>({
     fps: 60,
@@ -307,6 +309,7 @@ export default function App() {
         onCameraChange={handleCameraChange}
         onScreenshot={handleScreenshot}
         onOpenShapeStudio={() => setIsShapeStudioOpen(true)}
+        onOpenGuide={() => setIsGuideOpen(true)}
       />
 
       {/* Left Dock: Manifold & Color Palette Selector */}
@@ -375,6 +378,12 @@ export default function App() {
       <SnapshotModal
         imageUrl={snapshotUrl}
         onClose={() => setSnapshotUrl(null)}
+      />
+
+      {/* Interactive In-App User Guide & Readme */}
+      <UserGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
       />
     </div>
   );
