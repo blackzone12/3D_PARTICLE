@@ -139,7 +139,22 @@ Located in the bottom-left corner of the interface:
 ## 🛠️ Architecture & Technologies
 
 - **Rendering Engine**: Three.js `WebGLRenderer` utilizing customized `BufferGeometry` and `PointsMaterial`.
-- **Procedural Shader/Texture Generator**: In-memory Canvas API procedural alpha masks.
+- **Procedural Texture Generator**: In-memory Canvas API procedural alpha masks.
 - **Audio Engine**: Native `AudioContext` with custom stereo panners, biquad resonant filters, sub-bass drones, and harmonic oscillators.
 - **UI & HUD Framework**: React 19, Motion (`framer-motion`), Lucide Icons, and Tailwind CSS.
 - **Build System**: Vite with TypeScript strict mode.
+
+---
+
+## 💻 Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server (runs on localhost:3000)
+npm run dev
+
+# Build production bundle
+npm run build
+```

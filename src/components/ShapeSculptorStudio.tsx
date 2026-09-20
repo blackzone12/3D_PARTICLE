@@ -75,7 +75,7 @@ const TEXT_QUICK_PRESETS = [
   'QUANTUM',
   'INFINITY',
   'FUTURE',
-  'AI 2026',
+  'COSMOS',
   'NEBULA',
 ];
 
