@@ -1,0 +1,6 @@
+{
+  "name": "Aetheria 3D Kinetic Synthesizer",
+  "description": "An advanced 3D spatial particle laboratory and kinetic audio-reactive synthesizer featuring real-time topological morphing, gravitational field simulation, and spatial generative sonification.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
