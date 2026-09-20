@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { ParticleUniverse } from './engine/particleSystem';
 import { KineticAudioEngine } from './audio/synthEngine';
+import { UniverseVideoRecorder } from './engine/videoRecorder';
+import { MASTER_PRESETS, loadUserPresets, saveUserPresets } from './engine/presets';
 import {
   ParticleConfig,
   AudioConfig,
@@ -10,6 +12,10 @@ import {
   TopologyType,
   ColorTheme,
   ParametricParams,
+  GravitationalSingularity,
+  AccessibilityConfig,
+  RecordingState,
+  Preset,
 } from './types';
 import { HeaderBar } from './components/HeaderBar';
 import { TopologyDock } from './components/TopologyDock';
@@ -18,6 +24,11 @@ import { InteractionDock } from './components/InteractionDock';
 import { SnapshotModal } from './components/SnapshotModal';
 import { ShapeSculptorStudio } from './components/ShapeSculptorStudio';
 import { UserGuideModal } from './components/UserGuideModal';
+import { SingularityManager } from './components/SingularityManager';
+import { SynesthesiaKeyboard } from './components/SynesthesiaKeyboard';
+import { RecordingStudioModal } from './components/RecordingStudioModal';
+import { AccessibilityModal } from './components/AccessibilityModal';
+import { PresetDrawer } from './components/PresetDrawer';
 
 const INITIAL_PARAMETRIC: ParametricParams = {
   m: 6,
@@ -90,6 +101,7 @@ export default function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const universeRef = useRef<ParticleUniverse | null>(null);
   const audioRef = useRef<KineticAudioEngine | null>(null);
+  const videoRecorderRef = useRef<UniverseVideoRecorder | null>(null);
 
   // States
   const [particleConfig, setParticleConfig] = useState<ParticleConfig>(INITIAL_PARTICLE_CONFIG);
@@ -103,6 +115,31 @@ export default function App() {
   const [isTouring, setIsTouring] = useState(false);
   const [isShapeStudioOpen, setIsShapeStudioOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+
+  // Advanced Feature States
+  const [userPresets, setUserPresets] = useState<Preset[]>(() => loadUserPresets());
+  const [activePresetId, setActivePresetId] = useState<string>('lorenz-harmony');
+  const [isPresetDrawerOpen, setIsPresetDrawerOpen] = useState(false);
+  const [isRecordingModalOpen, setIsRecordingModalOpen] = useState(false);
+  const [isAccessibilityModalOpen, setIsAccessibilityModalOpen] = useState(false);
+  const [isSingularitiesOpen, setIsSingularitiesOpen] = useState(false);
+  const [isSynesthesiaOpen, setIsSynesthesiaOpen] = useState(false);
+  const [hasLowFpsWarning, setHasLowFpsWarning] = useState(false);
+  const [singularities, setSingularities] = useState<GravitationalSingularity[]>([]);
+  const [recordingState, setRecordingState] = useState<RecordingState>({
+    isRecording: false,
+    isPaused: false,
+    duration: 0,
+    mimeType: '',
+  });
+  const [accessibilityConfig, setAccessibilityConfig] = useState<AccessibilityConfig>({
+    reducedMotion: false,
+    highContrast: false,
+    fontSize: 'medium',
+    colorBlindMode: 'none',
+    soundDescriptions: true,
+    screenReaderMode: false,
+  });
 
   // Responsive dock toggles preventing mutual screen occlusion
   const handleToggleDock = () => {
@@ -134,7 +171,7 @@ export default function App() {
     fieldSingularities: 1,
   });
 
-  // Initialize Three.js Universe & Audio Engine
+  // Initialize Three.js Universe & Audio Engine & Video Recorder
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -145,6 +182,22 @@ export default function App() {
     // Create audio engine
     const audio = new KineticAudioEngine(audioConfig);
     audioRef.current = audio;
+
+    // Create video recorder and wire audio destination
+    const canvasEl = universe.getCanvasElement();
+    const audioStreamDest = audio.getMediaStreamDestination();
+    const recorder = new UniverseVideoRecorder(canvasEl, audioStreamDest, (st) => setRecordingState(st));
+    videoRecorderRef.current = recorder;
+
+    // Wire singularity state sync
+    universe.onSingularitiesChanged = (sings: GravitationalSingularity[]) => {
+      setSingularities([...sings]);
+    };
+
+    // Wire low FPS watchdog
+    universe.onLowFpsDetected = () => {
+      setHasLowFpsWarning(true);
+    };
 
     // Connect bidirectional spatial audio feedback and live microphone reactivity
     universe.onAudioModulation = (normX, kinetic, entropy) => {
@@ -161,6 +214,7 @@ export default function App() {
     };
 
     return () => {
+      recorder.dispose();
       universe.dispose();
       audio.dispose();
     };
@@ -302,6 +356,172 @@ export default function App() {
     audioRef.current?.triggerHarmonicChime(0.7, 1);
   }, []);
 
+  // Synesthesia Musical Note Trigger (Audio + Visual shockwave wave)
+  const handlePlaySynesthesiaNote = useCallback((noteIndex: number) => {
+    if (!audioRef.current) return;
+    const ratio = audioRef.current.triggerSynesthesiaNote(noteIndex);
+    if (universeRef.current) {
+      universeRef.current.triggerHarmonicWave(ratio, noteIndex);
+    }
+  }, []);
+
+  // Singularity Gravitational Management
+  const handleAddSingularity = useCallback((s: GravitationalSingularity) => {
+    universeRef.current?.addSingularity(s);
+    audioRef.current?.triggerHarmonicChime(0.85, 2);
+  }, []);
+
+  const handleRemoveSingularity = useCallback((id: string) => {
+    universeRef.current?.removeSingularity(id);
+    audioRef.current?.triggerHarmonicChime(0.6, 1);
+  }, []);
+
+  const handleToggleSingularityPolarity = useCallback((id: string) => {
+    universeRef.current?.toggleSingularityPolarity(id);
+    audioRef.current?.triggerHarmonicChime(0.7, 3);
+  }, []);
+
+  const handleClearSingularities = useCallback(() => {
+    universeRef.current?.clearSingularities();
+  }, []);
+
+  // Video Recording & 4K Frame Capture
+  const handleStartRecording = useCallback((_fps = 60) => {
+    videoRecorderRef.current?.start();
+  }, []);
+
+  const handleStopRecording = useCallback(() => {
+    videoRecorderRef.current?.stop();
+  }, []);
+
+  const handlePauseRecording = useCallback(() => {
+    videoRecorderRef.current?.pause();
+  }, []);
+
+  const handleResumeRecording = useCallback(() => {
+    videoRecorderRef.current?.resume();
+  }, []);
+
+  const handleCapture4KSnapshot = useCallback((_width = 3840, _height = 2160) => {
+    if (!universeRef.current) return null;
+    return universeRef.current.take4KSnapshot(2);
+  }, []);
+
+  // Accessibility configuration
+  const handleUpdateAccessibility = useCallback((cfg: AccessibilityConfig) => {
+    setAccessibilityConfig(cfg);
+    universeRef.current?.setAccessibility(cfg);
+  }, []);
+
+  // Preset management
+  const handleApplyPreset = useCallback((preset: Preset) => {
+    setActivePresetId(preset.id);
+    handleParticleChange(preset.particleConfig);
+    handleAudioChange(preset.audioConfig);
+    if (universeRef.current) {
+      universeRef.current.clearSingularities();
+      if (preset.singularities && preset.singularities.length > 0) {
+        preset.singularities.forEach((s) => universeRef.current?.addSingularity(s));
+      }
+    }
+    audioRef.current?.triggerHarmonicChime(0.9, 2);
+  }, [handleParticleChange, handleAudioChange]);
+
+  const handleSaveCurrentPreset = useCallback((name: string, description: string) => {
+    const newPreset: Preset = {
+      id: `user-${Date.now()}`,
+      name,
+      description,
+      category: 'user',
+      createdAt: Date.now(),
+      particleConfig: { ...particleConfig },
+      audioConfig: { ...audioConfig },
+      singularities: [...singularities],
+    };
+    const updated = [newPreset, ...userPresets];
+    setUserPresets(updated);
+    saveUserPresets(updated);
+    setActivePresetId(newPreset.id);
+    audioRef.current?.triggerHarmonicChime(1.0, 3);
+  }, [particleConfig, audioConfig, singularities, userPresets]);
+
+  const handleDeleteUserPreset = useCallback((id: string) => {
+    const updated = userPresets.filter((p) => p.id !== id);
+    setUserPresets(updated);
+    saveUserPresets(updated);
+  }, [userPresets]);
+
+  const handleExportPresets = useCallback(() => {
+    const dataStr = JSON.stringify({ version: '1.0', presets: userPresets }, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aetheria-cosmic-presets-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [userPresets]);
+
+  const handleImportPresets = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const parsed = JSON.parse(e.target?.result as string);
+        const importedPresets: Preset[] = Array.isArray(parsed.presets)
+          ? parsed.presets
+          : (Array.isArray(parsed) ? parsed : []);
+        if (importedPresets.length > 0) {
+          const combined = [...importedPresets, ...userPresets];
+          setUserPresets(combined);
+          saveUserPresets(combined);
+          audioRef.current?.triggerHarmonicChime(1.0, 2);
+        }
+      } catch (err) {
+        console.error('Failed to import preset file', err);
+      }
+    };
+    reader.readAsText(file);
+  }, [userPresets]);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+      if (['1', '2', '3', '4', '5', '6', '7', '8'].includes(e.key)) {
+        const noteIdx = parseInt(e.key, 10) - 1;
+        handlePlaySynesthesiaNote(noteIdx);
+      } else if (e.code === 'Space') {
+        e.preventDefault();
+        handleShockwave();
+      } else if (key === 'q') {
+        handleFluctuation();
+      } else if (key === 't') {
+        setIsTouring((prev) => !prev);
+      } else if (key === 'k') {
+        setIsSynesthesiaOpen((prev) => !prev);
+      } else if (key === 'p') {
+        setIsPresetDrawerOpen((prev) => !prev);
+      } else if (key === 'r') {
+        setIsRecordingModalOpen((prev) => !prev);
+      } else if (key === 'a') {
+        setIsAccessibilityModalOpen((prev) => !prev);
+      } else if (key === 'm') {
+        handleAudioChange({ enabled: !audioConfig.enabled });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handlePlaySynesthesiaNote, handleShockwave, handleFluctuation, handleAudioChange, audioConfig.enabled]);
+
   // Automated Choreography Tour loop
   useEffect(() => {
     if (!isTouring) return;
@@ -352,6 +572,15 @@ export default function App() {
         telemetry={telemetry}
         isTouring={isTouring}
         onToggleTour={() => setIsTouring(!isTouring)}
+        onOpenPresets={() => setIsPresetDrawerOpen(true)}
+        onOpenRecordingStudio={() => setIsRecordingModalOpen(true)}
+        isRecording={recordingState.isRecording}
+        onOpenAccessibility={() => setIsAccessibilityModalOpen(true)}
+        onOpenSingularities={() => setIsSingularitiesOpen(true)}
+        singularitiesCount={singularities.length}
+        hasLowFpsWarning={hasLowFpsWarning}
+        onToggleSynesthesiaKeys={() => setIsSynesthesiaOpen((prev) => !prev)}
+        isSynesthesiaOpen={isSynesthesiaOpen}
       />
 
       {/* Mobile Backdrop Scrim when a drawer is open */}
@@ -402,6 +631,98 @@ export default function App() {
         onFluctuation={handleFluctuation}
         isTouring={isTouring}
         onToggleTour={() => setIsTouring(!isTouring)}
+        onToggleSynesthesiaKeys={() => setIsSynesthesiaOpen(!isSynesthesiaOpen)}
+        isSynesthesiaOpen={isSynesthesiaOpen}
+        onOpenSingularities={() => setIsSingularitiesOpen(true)}
+        singularitiesCount={singularities.length}
+      />
+
+      {/* Musical Synesthesia Resonant Floating Keyboard */}
+      <SynesthesiaKeyboard
+        isOpen={isSynesthesiaOpen}
+        onToggle={() => setIsSynesthesiaOpen(!isSynesthesiaOpen)}
+        onPlayNote={handlePlaySynesthesiaNote}
+        scaleName={audioConfig.scale}
+        isAudioEnabled={audioConfig.enabled}
+        onEnableAudio={() => handleAudioChange({ enabled: true })}
+      />
+
+      {/* Gravitational Singularities & Energy Wells Manager Modal */}
+      {isSingularitiesOpen && (
+        <div
+          id="singularity-manager-backdrop"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm cursor-pointer"
+          onClick={() => setIsSingularitiesOpen(false)}
+        >
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm cursor-default">
+            <SingularityManager
+              isOpen={true}
+              onClose={() => setIsSingularitiesOpen(false)}
+              singularities={singularities}
+              onAddCenter={() =>
+                handleAddSingularity({
+                  id: `sing_${Date.now()}`,
+                  position: {
+                    x: (Math.random() - 0.5) * 15,
+                    y: (Math.random() - 0.5) * 15,
+                    z: (Math.random() - 0.5) * 15,
+                  },
+                  strength: 2.2,
+                  radius: 14.0,
+                  createdAt: Date.now(),
+                  color: '#06b6d4',
+                })
+              }
+              onRemove={handleRemoveSingularity}
+              onTogglePolarity={handleToggleSingularityPolarity}
+              onClear={handleClearSingularities}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Video Capture & 4K Recording Studio Modal */}
+      <RecordingStudioModal
+        isOpen={isRecordingModalOpen}
+        onClose={() => setIsRecordingModalOpen(false)}
+        recordingState={recordingState}
+        onStartRecording={() => handleStartRecording(60)}
+        onPauseRecording={handlePauseRecording}
+        onResumeRecording={handleResumeRecording}
+        onStopRecording={handleStopRecording}
+        onCaptureSnapshot={(mult = 2) => handleCapture4KSnapshot(1920 * mult, 1080 * mult)}
+      />
+
+      {/* Accessibility & Sensory Adaptation Modal */}
+      <AccessibilityModal
+        isOpen={isAccessibilityModalOpen}
+        onClose={() => setIsAccessibilityModalOpen(false)}
+        config={accessibilityConfig}
+        onChange={handleUpdateAccessibility}
+        isLowFpsDetected={hasLowFpsWarning}
+        onAutoOptimize={() => {
+          setParticleConfig((prev) => ({
+            ...prev,
+            count: Math.max(10000, Math.floor(prev.count * 0.6)),
+            bloomIntensity: 0.1,
+          }));
+          universeRef.current?.rebuildParticles();
+          setHasLowFpsWarning(false);
+        }}
+      />
+
+      {/* Cosmological Presets Drawer */}
+      <PresetDrawer
+        isOpen={isPresetDrawerOpen}
+        onClose={() => setIsPresetDrawerOpen(false)}
+        masterPresets={MASTER_PRESETS}
+        userPresets={userPresets}
+        onApplyPreset={handleApplyPreset}
+        onSaveCurrentPreset={handleSaveCurrentPreset}
+        onDeleteUserPreset={handleDeleteUserPreset}
+        onExportPresets={handleExportPresets}
+        onImportPresets={handleImportPresets}
+        activePresetId={activePresetId}
       />
 
       {/* Infinite Shape Sculptor Studio Modal */}

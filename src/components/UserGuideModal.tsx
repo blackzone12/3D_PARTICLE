@@ -49,10 +49,10 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
         <div className="flex border-b border-slate-800/80 bg-slate-950/40 px-3 sm:px-4 py-2 overflow-x-auto space-x-1">
           {[
             { id: 'quickstart', label: 'Quick Start', icon: MousePointer },
-            { id: 'forces', label: 'Force Fields', icon: Zap },
+            { id: 'forces', label: 'Force Fields & Wells', icon: Zap },
             { id: 'shapes', label: 'Infinite Shapes', icon: Sparkles },
-            { id: 'optics', label: 'Optics & Brightness', icon: SunMedium },
-            { id: 'audio', label: 'Spatial Synth', icon: Music },
+            { id: 'audio', label: 'Synesthesia & Audio', icon: Music },
+            { id: 'optics', label: 'Optics & Studio', icon: SunMedium },
             { id: 'shortcuts', label: 'Controls Reference', icon: Layers },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -275,24 +275,48 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                     <span className="text-cyan-300">Scroll Wheel / Pinch</span>
                   </div>
                   <div className="grid grid-cols-2 p-2.5">
-                    <span>Toggle Synthesizer</span>
-                    <span className="text-cyan-300">Header &gt; SYNTH ON/OFF</span>
+                    <span>Spawn Gravitational Well</span>
+                    <span className="text-cyan-300">Double Click 3D Canvas / Wells Manager</span>
                   </div>
                   <div className="grid grid-cols-2 p-2.5">
-                    <span>Microphone Reactivity</span>
-                    <span className="text-cyan-300">Header &gt; MIC REACT</span>
+                    <span>Play Synesthesia Notes</span>
+                    <span className="text-cyan-300">Keys 1 - 8 / Synesthesia Keyboard</span>
+                  </div>
+                  <div className="grid grid-cols-2 p-2.5">
+                    <span>Supernova Shockwave</span>
+                    <span className="text-cyan-300">Spacebar / Dock Button</span>
+                  </div>
+                  <div className="grid grid-cols-2 p-2.5">
+                    <span>Quantum Thermal Kick</span>
+                    <span className="text-cyan-300">Q / Dock Button</span>
+                  </div>
+                  <div className="grid grid-cols-2 p-2.5">
+                    <span>Auto Tour Choreography</span>
+                    <span className="text-cyan-300">T / Header &amp; Dock Button</span>
+                  </div>
+                  <div className="grid grid-cols-2 p-2.5">
+                    <span>Cosmic Presets Drawer</span>
+                    <span className="text-cyan-300">P / Header Presets Button</span>
+                  </div>
+                  <div className="grid grid-cols-2 p-2.5">
+                    <span>Video &amp; 4K Recording Studio</span>
+                    <span className="text-cyan-300">R / Header Record Button</span>
+                  </div>
+                  <div className="grid grid-cols-2 p-2.5">
+                    <span>Accessibility &amp; Watchdog</span>
+                    <span className="text-cyan-300">A / Header A11y Button</span>
+                  </div>
+                  <div className="grid grid-cols-2 p-2.5">
+                    <span>Toggle Synthesizer</span>
+                    <span className="text-cyan-300">M / Header SYNTH ON/OFF</span>
+                  </div>
+                  <div className="grid grid-cols-2 p-2.5">
+                    <span>Toggle Synesthesia Keys</span>
+                    <span className="text-cyan-300">K / Dock Keys Button</span>
                   </div>
                   <div className="grid grid-cols-2 p-2.5">
                     <span>Infinite Shapes Studio</span>
-                    <span className="text-cyan-300">Header &gt; Infinite Shapes Button</span>
-                  </div>
-                  <div className="grid grid-cols-2 p-2.5">
-                    <span>Supernova Blast</span>
-                    <span className="text-cyan-300">Bottom Dock &gt; Supernova</span>
-                  </div>
-                  <div className="grid grid-cols-2 p-2.5">
-                    <span>High-Res Screenshot</span>
-                    <span className="text-cyan-300">Header &gt; Camera Icon (Lossless PNG)</span>
+                    <span className="text-cyan-300">Header &gt; Infinite Shapes</span>
                   </div>
                   <div className="grid grid-cols-2 p-2.5">
                     <span>Fullscreen</span>

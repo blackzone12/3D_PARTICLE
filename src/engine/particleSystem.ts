@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ParticleConfig, InteractionMode, TelemetryData, CameraMode } from '../types';
+import { ParticleConfig, InteractionMode, TelemetryData, CameraMode, GravitationalSingularity } from '../types';
 import { generateTopology, TopologyData } from './topologies';
 import { applyThemeToColor, COLOR_THEMES } from './colorThemes';
 import { createParticleTexture } from './textures';
@@ -91,6 +91,18 @@ export class ParticleUniverse {
   private smoothedLevel: number = 0;
   private lastAudioBeatTime: number = 0;
 
+  // Singularities (Pinned gravitational wells/repulsors)
+  public singularities: GravitationalSingularity[] = [];
+  private singularitiesGroup = new THREE.Group();
+  private singularityMeshes = new Map<string, THREE.Object3D>();
+  public onSingularitiesChanged?: (singularities: GravitationalSingularity[]) => void;
+
+  // Accessibility & Performance watchdog
+  public reducedMotion: boolean = false;
+  public onLowFpsDetected?: () => void;
+  private lowFpsCount = 0;
+  private hasWarnedLowFps = false;
+
   constructor(container: HTMLElement, config: ParticleConfig) {
     this.container = container;
     this.config = config;
@@ -98,6 +110,7 @@ export class ParticleUniverse {
     // 1. Scene
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.FogExp2(0x030712, 0.008);
+    this.scene.add(this.singularitiesGroup);
 
     // 2. Camera
     const aspect = container.clientWidth / Math.max(1, container.clientHeight);
@@ -355,12 +368,187 @@ export class ParticleUniverse {
   }
 
   public triggerSupernovaShockwave(): void {
+    const isReduced = this.reducedMotion;
     this.shockwaves.push({
       origin: this.mouse3D.clone(),
       radius: 0.1,
-      maxRadius: 36.0,
-      speed: 28.0,
-      strength: 42.0,
+      maxRadius: isReduced ? 18.0 : 36.0,
+      speed: isReduced ? 14.0 : 28.0,
+      strength: isReduced ? 18.0 : 42.0,
+    });
+  }
+
+  public triggerHarmonicWave(freqRatio: number, noteIndex: number): void {
+    const isReduced = this.reducedMotion;
+    const origin = this.singularities.length > 0
+      ? new THREE.Vector3(this.singularities[0].position.x, this.singularities[0].position.y, this.singularities[0].position.z)
+      : new THREE.Vector3(0, 0, 0);
+
+    const speed = isReduced ? 16.0 : 30.0 * Math.min(1.8, Math.sqrt(freqRatio));
+    const strength = isReduced ? 14.0 : 24.0 * Math.min(1.5, freqRatio);
+
+    this.shockwaves.push({
+      origin,
+      radius: 0.2,
+      maxRadius: isReduced ? 22.0 : 44.0,
+      speed,
+      strength,
+    });
+
+    // Excitation kick in particle velocities
+    const count = this.config.count;
+    const step = 4;
+    const kickMag = (isReduced ? 1.0 : 2.5) * (noteIndex % 2 === 0 ? 1 : -1);
+    for (let i = 0; i < count; i += step) {
+      const i3 = i * 3;
+      this.velocities[i3 + 1] += kickMag * 0.4;
+      this.velocities[i3 + 2] += kickMag * 0.3;
+    }
+  }
+
+  public addSingularity(
+    posOrSing: THREE.Vector3 | GravitationalSingularity,
+    strength: number = 1.6,
+    color: string = '#06b6d4'
+  ): GravitationalSingularity {
+    let pos: THREE.Vector3;
+    let actualStrength = strength;
+    let actualColor = color;
+    let id = `sing_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+
+    if ('position' in posOrSing) {
+      pos = new THREE.Vector3(posOrSing.position.x, posOrSing.position.y, posOrSing.position.z);
+      actualStrength = posOrSing.strength;
+      actualColor = posOrSing.color || color;
+      if (posOrSing.id) id = posOrSing.id;
+    } else {
+      pos = posOrSing;
+    }
+
+    const newSing: GravitationalSingularity = {
+      id,
+      position: { x: pos.x, y: pos.y, z: pos.z },
+      strength: actualStrength,
+      radius: 22.0,
+      createdAt: Date.now(),
+      color: actualColor,
+    };
+
+    this.singularities.push(newSing);
+
+    // Create 3D visual ring marker in singularitiesGroup
+    const group = new THREE.Group();
+    group.position.copy(pos);
+
+    // Outer luminous ring
+    const ringGeom = new THREE.RingGeometry(1.2, 1.4, 32);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: strength > 0 ? 0x06b6d4 : 0xf43f5e,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.8,
+    });
+    const ringMesh = new THREE.Mesh(ringGeom, ringMat);
+    group.add(ringMesh);
+
+    // Inner wireframe nucleus
+    const sphereGeom = new THREE.SphereGeometry(0.35, 12, 12);
+    const sphereMat = new THREE.MeshBasicMaterial({
+      color: strength > 0 ? 0x22d3ee : 0xfb7185,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.9,
+    });
+    const sphereMesh = new THREE.Mesh(sphereGeom, sphereMat);
+    group.add(sphereMesh);
+
+    this.singularitiesGroup.add(group);
+    this.singularityMeshes.set(id, group);
+
+    // Trigger visual birth shockwave
+    this.shockwaves.push({
+      origin: pos.clone(),
+      radius: 0.1,
+      maxRadius: 18.0,
+      speed: 26.0,
+      strength: 24.0 * Math.abs(strength),
+    });
+
+    if (this.onSingularitiesChanged) {
+      this.onSingularitiesChanged([...this.singularities]);
+    }
+
+    return newSing;
+  }
+
+  public toggleSingularityPolarity(id: string): void {
+    const sing = this.singularities.find(s => s.id === id);
+    if (!sing) return;
+    sing.strength = -sing.strength;
+    sing.color = sing.strength > 0 ? '#06b6d4' : '#f43f5e';
+
+    const mesh = this.singularityMeshes.get(id);
+    if (mesh && mesh.children.length >= 2) {
+      const ring = mesh.children[0] as THREE.Mesh;
+      const sphere = mesh.children[1] as THREE.Mesh;
+      const hex = sing.strength > 0 ? 0x06b6d4 : 0xf43f5e;
+      (ring.material as THREE.MeshBasicMaterial).color.setHex(hex);
+      (sphere.material as THREE.MeshBasicMaterial).color.setHex(sing.strength > 0 ? 0x22d3ee : 0xfb7185);
+    }
+
+    if (this.onSingularitiesChanged) {
+      this.onSingularitiesChanged([...this.singularities]);
+    }
+  }
+
+  public removeSingularity(id: string): void {
+    this.singularities = this.singularities.filter(s => s.id !== id);
+    const mesh = this.singularityMeshes.get(id);
+    if (mesh) {
+      this.singularitiesGroup.remove(mesh);
+      mesh.traverse((obj) => {
+        if ((obj as THREE.Mesh).geometry) (obj as THREE.Mesh).geometry.dispose();
+        if ((obj as THREE.Mesh).material) {
+          const mat = (obj as THREE.Mesh).material;
+          if (Array.isArray(mat)) mat.forEach(m => m.dispose());
+          else mat.dispose();
+        }
+      });
+      this.singularityMeshes.delete(id);
+    }
+
+    if (this.onSingularitiesChanged) {
+      this.onSingularitiesChanged([...this.singularities]);
+    }
+  }
+
+  public clearSingularities(): void {
+    this.singularities = [];
+    this.singularityMeshes.forEach((mesh) => {
+      this.singularitiesGroup.remove(mesh);
+      mesh.traverse((obj) => {
+        if ((obj as THREE.Mesh).geometry) (obj as THREE.Mesh).geometry.dispose();
+        if ((obj as THREE.Mesh).material) {
+          const mat = (obj as THREE.Mesh).material;
+          if (Array.isArray(mat)) mat.forEach(m => m.dispose());
+          else mat.dispose();
+        }
+      });
+    });
+    this.singularityMeshes.clear();
+
+    if (this.onSingularitiesChanged) {
+      this.onSingularitiesChanged([]);
+    }
+  }
+
+  private updateSingularityVisuals(time: number): void {
+    this.singularityMeshes.forEach((group) => {
+      group.rotation.x = time * 0.7;
+      group.rotation.y = time * 1.1;
+      group.rotation.z = time * 0.4;
+      const pulse = 1.0 + 0.14 * Math.sin(time * 4.0);
+      group.scale.set(pulse, pulse, pulse);
     });
   }
 
@@ -524,9 +712,22 @@ export class ParticleUniverse {
       }
     };
 
+    const onDblClick = (e: MouseEvent) => {
+      // Raycast to mouse virtual plane and drop a singularity
+      const rect = dom.getBoundingClientRect();
+      const normX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const normY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      this.raycaster.setFromCamera(new THREE.Vector2(normX, normY), this.camera);
+      const intersectPt = new THREE.Vector3();
+      if (this.raycaster.ray.intersectPlane(this.mousePlane, intersectPt)) {
+        this.addSingularity(intersectPt);
+      }
+    };
+
     dom.style.touchAction = 'none';
     dom.addEventListener('pointermove', onPointerMove);
     dom.addEventListener('pointerdown', onPointerDown);
+    dom.addEventListener('dblclick', onDblClick);
     window.addEventListener('pointerup', onPointerUp);
     dom.addEventListener('touchstart', onTouchStart, { passive: false });
     dom.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -609,13 +810,16 @@ export class ParticleUniverse {
     const timeScale = this.config.timeScale;
     const scaledDelta = delta * timeScale;
 
-    // Cinematic camera drift if enabled
-    if (this.cameraMode === 'cinematic_drift') {
+    // Cinematic camera drift if enabled (paused in reduced motion mode)
+    if (this.cameraMode === 'cinematic_drift' && !this.reducedMotion) {
       this.targetRotY += 0.003 * timeScale;
       this.targetRotX = 0.2 + 0.12 * Math.sin(elapsedTime * 0.4);
     }
 
     this.updateCameraPosition();
+
+    // Update Singularity Visual Rings
+    this.updateSingularityVisuals(elapsedTime);
 
     // Physics Simulation step
     this.stepPhysics(scaledDelta, elapsedTime);
@@ -634,6 +838,17 @@ export class ParticleUniverse {
       this.frameCount = 0;
       this.lastFpsTime = now;
       this.emitTelemetry();
+
+      // Performance watchdog
+      if (this.currentFps < 28) {
+        this.lowFpsCount++;
+        if (this.lowFpsCount >= 6 && !this.hasWarnedLowFps) {
+          this.hasWarnedLowFps = true;
+          this.onLowFpsDetected?.();
+        }
+      } else if (this.currentFps >= 42) {
+        this.lowFpsCount = 0;
+      }
     }
   }
 
@@ -815,6 +1030,25 @@ export class ParticleUniverse {
         }
       }
 
+      // 3b. Gravitational Singularities / Persistent Anomaly Wells
+      const numSingularities = this.singularities.length;
+      for (let s = 0; s < numSingularities; s++) {
+        const sing = this.singularities[s];
+        const sdx = px - sing.position.x;
+        const sdy = py - sing.position.y;
+        const sdz = pz - sing.position.z;
+        const sDistSq = sdx * sdx + sdy * sdy + sdz * sdz + 0.6;
+        const sDist = Math.sqrt(sDistSq);
+
+        if (sDist < sing.radius) {
+          const sFalloff = 1.0 - sDist / sing.radius;
+          const sForce = (sing.strength * 48.0 * sFalloff) / (sDist + 0.6);
+          vx -= (sdx / sDist) * sForce * dt;
+          vy -= (sdy / sDist) * sForce * dt;
+          vz -= (sdz / sDist) * sForce * dt;
+        }
+      }
+
       // 4. Damping & Integration
       vx *= Math.pow(damping, dt * 60);
       vy *= Math.pow(damping, dt * 60);
@@ -929,9 +1163,41 @@ export class ParticleUniverse {
     });
   }
 
+  public getCanvasElement(): HTMLCanvasElement {
+    return this.renderer.domElement;
+  }
+
   public takeScreenshot(): string {
     this.renderer.render(this.scene, this.camera);
     return this.renderer.domElement.toDataURL('image/png');
+  }
+
+  public take4KSnapshot(scaleMultiplier: number = 2): string {
+    const origWidth = this.container.clientWidth;
+    const origHeight = this.container.clientHeight;
+    try {
+      this.renderer.setSize(origWidth * scaleMultiplier, origHeight * scaleMultiplier, false);
+      this.camera.aspect = (origWidth * scaleMultiplier) / Math.max(1, origHeight * scaleMultiplier);
+      this.camera.updateProjectionMatrix();
+      this.renderer.render(this.scene, this.camera);
+      const dataUrl = this.renderer.domElement.toDataURL('image/png');
+      return dataUrl;
+    } finally {
+      this.renderer.setSize(origWidth, origHeight, false);
+      this.camera.aspect = origWidth / Math.max(1, origHeight);
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  public setAccessibility(cfg: { reducedMotion?: boolean; highContrast?: boolean }): void {
+    this.reducedMotion = !!cfg.reducedMotion;
+    if (cfg.highContrast) {
+      this.scene.fog = new THREE.FogExp2(0x000000, 0.003);
+      this.renderer.setClearColor(0x000000, 1);
+    } else {
+      this.scene.fog = new THREE.FogExp2(0x030712, 0.008);
+      this.renderer.setClearColor(0x030712, 1);
+    }
   }
 
   public setParticleSize(newSize: number): void {
@@ -967,6 +1233,7 @@ export class ParticleUniverse {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
     }
+    this.clearSingularities();
     this.geometry?.dispose();
     this.material?.dispose();
     this.renderer.dispose();

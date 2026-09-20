@@ -30,6 +30,7 @@ export class KineticAudioEngine {
   private isRunning: boolean = false;
   private lastArpTime: number = 0;
   private config: AudioConfig;
+  private mediaStreamDestination: MediaStreamAudioDestinationNode | null = null;
 
   constructor(initialConfig: AudioConfig) {
     this.config = initialConfig;
@@ -217,6 +218,65 @@ export class KineticAudioEngine {
 
     osc.start(t);
     osc.stop(t + 1.0);
+  }
+
+  /**
+   * Return a Web Audio MediaStreamDestinationNode connected to master output
+   * for synchronizing high-definition WebM video/audio recording.
+   */
+  public getMediaStreamDestination(): MediaStreamAudioDestinationNode | null {
+    if (!this.ctx || !this.masterGain) return null;
+    if (!this.mediaStreamDestination) {
+      this.mediaStreamDestination = this.ctx.createMediaStreamDestination();
+      this.masterGain.connect(this.mediaStreamDestination);
+    }
+    return this.mediaStreamDestination;
+  }
+
+  /**
+   * Trigger a precise musical synesthesia note based on scale index (0 to 7).
+   * Spatially pans the note and returns the frequency ratio for visual wave sync.
+   */
+  public triggerSynesthesiaNote(noteIndex: number): number {
+    if (!this.ctx || !this.filter || !this.config.enabled) return 1.0;
+    const scale = SCALES[this.config.scale] || SCALES.celestial;
+    const ratioIndex = noteIndex % scale.length;
+    const octave = Math.floor(noteIndex / scale.length);
+    const noteRatio = scale[ratioIndex] * Math.pow(2, octave);
+    const root = (this.config.droneFrequency || 65.41) * 4; // C4 range
+    const freq = root * noteRatio;
+
+    const t = this.ctx.currentTime;
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    const noteGain = this.ctx.createGain();
+    const notePanner = this.ctx.createStereoPanner();
+
+    // Spatial stereophonic pan based on keyboard note (-0.8 to 0.8)
+    const panVal = Math.max(-0.85, Math.min(0.85, (noteIndex / 7) * 1.7 - 0.85));
+    notePanner.pan.setValueAtTime(panVal, t);
+
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(freq, t);
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(freq * 2.003, t);
+
+    const hitVolume = 0.24;
+    noteGain.gain.setValueAtTime(0.001, t);
+    noteGain.gain.exponentialRampToValueAtTime(hitVolume, t + 0.02);
+    noteGain.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+
+    osc1.connect(noteGain);
+    osc2.connect(noteGain);
+    noteGain.connect(notePanner);
+    notePanner.connect(this.filter);
+
+    osc1.start(t);
+    osc2.start(t);
+    osc1.stop(t + 1.3);
+    osc2.stop(t + 1.3);
+
+    return noteRatio;
   }
 
   /**

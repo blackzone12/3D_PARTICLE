@@ -11,6 +11,7 @@ import {
   Pause,
   PenTool,
   Compass,
+  Music,
 } from 'lucide-react';
 import { InteractionMode } from '../types';
 
@@ -21,6 +22,10 @@ interface InteractionDockProps {
   onFluctuation: () => void;
   isTouring: boolean;
   onToggleTour: () => void;
+  onToggleSynesthesiaKeys?: () => void;
+  isSynesthesiaOpen?: boolean;
+  onOpenSingularities?: () => void;
+  singularitiesCount?: number;
 }
 
 export const InteractionDock: React.FC<InteractionDockProps> = ({
@@ -30,6 +35,10 @@ export const InteractionDock: React.FC<InteractionDockProps> = ({
   onFluctuation,
   isTouring,
   onToggleTour,
+  onToggleSynesthesiaKeys,
+  isSynesthesiaOpen,
+  onOpenSingularities,
+  singularitiesCount = 0,
 }) => {
   const modes: { id: InteractionMode; label: string; icon: React.FC<{ size?: number }>; desc: string }[] = [
     { id: 'attract', label: 'Attract', icon: Magnet, desc: 'Gravity well singularity' },
@@ -123,7 +132,7 @@ export const InteractionDock: React.FC<InteractionDockProps> = ({
             type="button"
             onClick={onShockwave}
             className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 flex items-center justify-center space-x-1.5 transition-colors cursor-pointer text-xs font-mono font-medium shadow-sm active:scale-95 shrink-0 min-h-[38px]"
-            title="Detonate Supernova Shockwave (Shortcut: X)"
+            title="Detonate Supernova Shockwave (Shortcut: Space)"
           >
             <Bomb size={14} />
             <span className="hidden sm:inline">Shockwave</span>
@@ -139,6 +148,43 @@ export const InteractionDock: React.FC<InteractionDockProps> = ({
             <Sparkles size={14} />
             <span className="hidden sm:inline">Quantum Kick</span>
           </button>
+
+          {/* Musical Synesthesia Keyboard Toggle */}
+          {onToggleSynesthesiaKeys && (
+            <button
+              id="dock-synesthesia-keyboard-btn"
+              type="button"
+              onClick={onToggleSynesthesiaKeys}
+              className={`p-2 sm:px-2.5 sm:py-1.5 rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer text-xs font-mono font-medium shadow-sm active:scale-95 shrink-0 min-h-[38px] ${
+                isSynesthesiaOpen
+                  ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400'
+                  : 'bg-cyan-950/30 hover:bg-cyan-900/40 text-cyan-300 border border-cyan-600/40'
+              }`}
+              title="Toggle Resonant Synesthesia Keys (Keys 1-8)"
+            >
+              <Music size={14} />
+              <span className="hidden sm:inline">Keys</span>
+            </button>
+          )}
+
+          {/* Gravitational Singularities Quick Access */}
+          {onOpenSingularities && (
+            <button
+              id="dock-singularities-btn"
+              type="button"
+              onClick={onOpenSingularities}
+              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-cyan-900/20 hover:bg-cyan-800/30 text-cyan-200 border border-cyan-500/30 flex items-center justify-center space-x-1.5 transition-colors cursor-pointer text-xs font-mono font-medium shadow-sm active:scale-95 shrink-0 min-h-[38px]"
+              title="Manage Gravitational Singularities"
+            >
+              <Magnet size={14} />
+              <span className="hidden sm:inline">Wells</span>
+              {singularitiesCount > 0 && (
+                <span className="text-[10px] font-mono px-1 py-0.2 rounded-full bg-cyan-500 text-gray-950 font-bold">
+                  {singularitiesCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

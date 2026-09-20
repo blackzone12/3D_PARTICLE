@@ -95,3 +95,43 @@ export interface TelemetryData {
   activeHarmonic: string;
   fieldSingularities: number;
 }
+
+export interface GravitationalSingularity {
+  id: string;
+  position: { x: number; y: number; z: number };
+  strength: number; // positive = attractor, negative = repulsor
+  radius: number;
+  createdAt: number;
+  color: string;
+}
+
+export interface Preset {
+  id: string;
+  name: string;
+  description: string;
+  category: 'master' | 'user';
+  createdAt: number;
+  particleConfig: ParticleConfig;
+  audioConfig: AudioConfig;
+  cameraMode?: CameraMode;
+  interactionMode?: InteractionMode;
+  singularities?: GravitationalSingularity[];
+}
+
+export interface RecordingState {
+  isRecording: boolean;
+  duration: number; // seconds
+  isPaused: boolean;
+  mimeType?: string;
+}
+
+export interface AccessibilityConfig {
+  highContrast: boolean;
+  reducedMotion: boolean;
+  screenReaderMode?: boolean;
+  performanceQuality?: 'eco' | 'balanced' | 'ultra' | 'quantum';
+  announceLive?: boolean;
+  fontSize?: 'small' | 'medium' | 'large';
+  colorBlindMode?: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia';
+  soundDescriptions?: boolean;
+}

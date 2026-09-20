@@ -19,6 +19,11 @@ import {
   Pause,
   Menu,
   Sliders,
+  Bookmark,
+  Magnet,
+  Film,
+  Video,
+  Music,
 } from 'lucide-react';
 import { CameraMode, AudioConfig, TelemetryData } from '../types';
 
@@ -35,6 +40,15 @@ interface HeaderBarProps {
   telemetry: TelemetryData;
   isTouring?: boolean;
   onToggleTour?: () => void;
+  onOpenPresets?: () => void;
+  onOpenRecordingStudio?: () => void;
+  isRecording?: boolean;
+  onOpenAccessibility?: () => void;
+  onOpenSingularities?: () => void;
+  singularitiesCount?: number;
+  hasLowFpsWarning?: boolean;
+  onToggleSynesthesiaKeys?: () => void;
+  isSynesthesiaOpen?: boolean;
 }
 
 export const HeaderBar: React.FC<HeaderBarProps> = ({
@@ -50,6 +64,15 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   telemetry,
   isTouring = false,
   onToggleTour,
+  onOpenPresets,
+  onOpenRecordingStudio,
+  isRecording = false,
+  onOpenAccessibility,
+  onOpenSingularities,
+  singularitiesCount = 0,
+  hasLowFpsWarning = false,
+  onToggleSynesthesiaKeys,
+  isSynesthesiaOpen = false,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
@@ -252,6 +275,27 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
               {micActive ? 'MIC LIVE' : 'MIC REACT'}
             </span>
           </button>
+
+          {/* Harmonic Synesthesia Keys Quick Toggle */}
+          {onToggleSynesthesiaKeys && (
+            <>
+              <div className="w-[1px] h-4 bg-slate-700/60" />
+              <button
+                id="header-synesthesia-keys-btn"
+                type="button"
+                onClick={onToggleSynesthesiaKeys}
+                className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center space-x-1.5 transition-colors cursor-pointer ${
+                  isSynesthesiaOpen
+                    ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+                title="Toggle Resonant Harmonic Keys (Keys 1–8)"
+              >
+                <Music size={14} className={isSynesthesiaOpen ? 'text-cyan-300' : 'text-slate-400'} />
+                <span className="text-[11px] font-semibold hidden md:inline">KEYS</span>
+              </button>
+            </>
+          )}
         </div>
 
         {/* Camera Preset Selector */}
@@ -323,6 +367,77 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
       {/* Desktop Right Utility Buttons */}
       <div className="pointer-events-auto hidden sm:flex items-center space-x-1.5 sm:space-x-2">
+        {onOpenPresets && (
+          <button
+            id="header-presets-btn"
+            type="button"
+            onClick={onOpenPresets}
+            className="hud-glass px-2.5 py-1.5 sm:py-2 rounded-xl text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40 transition-colors cursor-pointer flex items-center space-x-1.5"
+            title="Universe Presets & Cosmological States"
+          >
+            <Bookmark size={15} className="text-cyan-300" />
+            <span className="text-xs font-mono hidden xl:inline">Presets</span>
+          </button>
+        )}
+
+        {onOpenSingularities && (
+          <button
+            id="header-singularities-btn"
+            type="button"
+            onClick={onOpenSingularities}
+            className="hud-glass px-2.5 py-1.5 sm:py-2 rounded-xl text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40 transition-colors cursor-pointer flex items-center space-x-1.5 relative"
+            title="Gravitational Wells & Singularities Manager"
+          >
+            <Magnet size={15} className="text-cyan-300" />
+            <span className="text-xs font-mono hidden xl:inline">Wells</span>
+            {singularitiesCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-cyan-500 text-gray-950 font-bold font-mono text-[9px] flex items-center justify-center">
+                {singularitiesCount}
+              </span>
+            )}
+          </button>
+        )}
+
+        {onOpenRecordingStudio && (
+          <button
+            id="header-recording-studio-btn"
+            type="button"
+            onClick={onOpenRecordingStudio}
+            className={`hud-glass px-2.5 py-1.5 sm:py-2 rounded-xl transition-colors cursor-pointer flex items-center space-x-1.5 ${
+              isRecording
+                ? 'border-red-500/60 bg-red-950/40 text-red-300 animate-pulse'
+                : 'text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40'
+            }`}
+            title="Open Video Capture & 4K Recording Studio"
+          >
+            {isRecording ? (
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+            ) : (
+              <Film size={15} className="text-cyan-300" />
+            )}
+            <span className="text-xs font-mono hidden md:inline">
+              {isRecording ? 'REC' : 'Record'}
+            </span>
+          </button>
+        )}
+
+        {onOpenAccessibility && (
+          <button
+            id="header-accessibility-btn"
+            type="button"
+            onClick={onOpenAccessibility}
+            className={`hud-glass px-2.5 py-1.5 sm:py-2 rounded-xl transition-colors cursor-pointer flex items-center space-x-1.5 relative ${
+              hasLowFpsWarning
+                ? 'border-amber-500/60 bg-amber-950/40 text-amber-300 animate-bounce'
+                : 'text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40'
+            }`}
+            title="Accessibility & Assistive Settings"
+          >
+            <Eye size={15} className={hasLowFpsWarning ? 'text-amber-400' : 'text-cyan-300'} />
+            <span className="text-xs font-mono hidden xl:inline">A11y</span>
+          </button>
+        )}
+
         <button
           id="header-user-guide-btn"
           type="button"
@@ -475,6 +590,26 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                   {micActive ? <Mic size={14} className="text-emerald-400" /> : <MicOff size={14} />}
                   <span>{micActive ? 'Microphone Active' : 'Enable Mic Reactivity'}</span>
                 </button>
+
+                {/* Synesthesia Harmonic Keys Toggle */}
+                {onToggleSynesthesiaKeys && (
+                  <button
+                    id="mobile-synesthesia-keys-btn"
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onToggleSynesthesiaKeys();
+                    }}
+                    className={`w-full py-1.5 px-2 rounded-lg text-xs font-mono flex items-center justify-center space-x-2 transition-colors cursor-pointer border ${
+                      isSynesthesiaOpen
+                        ? 'bg-cyan-500/25 text-cyan-200 border-cyan-400/50'
+                        : 'bg-slate-800/70 text-cyan-300 border-slate-700/60 hover:bg-slate-800'
+                    }`}
+                  >
+                    <Music size={14} className="text-cyan-400" />
+                    <span>{isSynesthesiaOpen ? 'Close Harmonic Keys' : 'Open Harmonic Keys (1–8)'}</span>
+                  </button>
+                )}
               </div>
 
               {/* Camera Presets */}
@@ -505,6 +640,84 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Mobile Quick Feature Tiles */}
+              <div className="grid grid-cols-2 gap-1.5 font-mono text-xs">
+                {onOpenPresets && (
+                  <button
+                    id="mobile-presets-btn"
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onOpenPresets();
+                    }}
+                    className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-cyan-200 flex items-center space-x-2 cursor-pointer"
+                  >
+                    <Bookmark size={14} className="text-cyan-400" />
+                    <span>Presets</span>
+                  </button>
+                )}
+
+                {onOpenSingularities && (
+                  <button
+                    id="mobile-singularities-btn"
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onOpenSingularities();
+                    }}
+                    className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-cyan-200 flex items-center space-x-2 cursor-pointer justify-between"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Magnet size={14} className="text-cyan-400" />
+                      <span>Wells</span>
+                    </div>
+                    {singularitiesCount > 0 && (
+                      <span className="w-4 h-4 rounded-full bg-cyan-500 text-gray-950 font-bold text-[9px] flex items-center justify-center">
+                        {singularitiesCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+
+                {onOpenRecordingStudio && (
+                  <button
+                    id="mobile-recording-btn"
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onOpenRecordingStudio();
+                    }}
+                    className={`p-2 rounded-xl border flex items-center space-x-2 cursor-pointer ${
+                      isRecording
+                        ? 'bg-red-950/60 border-red-500 text-red-200 animate-pulse'
+                        : 'bg-slate-900/80 hover:bg-slate-800 border-slate-700/80 text-cyan-200'
+                    }`}
+                  >
+                    <Film size={14} className={isRecording ? 'text-red-400' : 'text-cyan-400'} />
+                    <span>{isRecording ? 'REC Active' : 'Studio'}</span>
+                  </button>
+                )}
+
+                {onOpenAccessibility && (
+                  <button
+                    id="mobile-accessibility-btn"
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onOpenAccessibility();
+                    }}
+                    className={`p-2 rounded-xl border flex items-center space-x-2 cursor-pointer ${
+                      hasLowFpsWarning
+                        ? 'bg-amber-950/60 border-amber-500 text-amber-200'
+                        : 'bg-slate-900/80 hover:bg-slate-800 border-slate-700/80 text-cyan-200'
+                    }`}
+                  >
+                    <Eye size={14} className={hasLowFpsWarning ? 'text-amber-400' : 'text-cyan-400'} />
+                    <span>A11y Tuning</span>
+                  </button>
+                )}
               </div>
 
               {/* Utility Tools */}
