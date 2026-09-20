@@ -49,6 +49,7 @@ interface HeaderBarProps {
   hasLowFpsWarning?: boolean;
   onToggleSynesthesiaKeys?: () => void;
   isSynesthesiaOpen?: boolean;
+  onOpenGeminiOracle?: () => void;
 }
 
 export const HeaderBar: React.FC<HeaderBarProps> = ({
@@ -73,6 +74,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   hasLowFpsWarning = false,
   onToggleSynesthesiaKeys,
   isSynesthesiaOpen = false,
+  onOpenGeminiOracle,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
@@ -121,8 +123,24 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           title="Open Infinite Shape Sculptor Studio (Text, Mutator, Superformula)"
         >
           <Sparkles size={14} className="text-cyan-300 group-hover:scale-110 transition-transform" />
-          <span className="text-xs font-mono font-medium hidden lg:inline">Infinite Shapes</span>
+          <span className="text-xs font-mono font-medium hidden lg:inline">Shapes</span>
         </button>
+
+        {/* Gemini AI Cosmic Oracle Launcher */}
+        {onOpenGeminiOracle && (
+          <button
+            id="header-gemini-oracle-btn"
+            type="button"
+            onClick={onOpenGeminiOracle}
+            className="hud-glass px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl flex items-center space-x-1.5 border border-indigo-500/50 hover:border-cyan-400 text-cyan-100 hover:text-white bg-gradient-to-r from-indigo-950/50 via-purple-950/30 to-cyan-950/50 hover:from-indigo-900/60 hover:to-cyan-900/60 transition-all cursor-pointer shadow-[0_0_15px_rgba(99,102,241,0.25)] group"
+            title="Gemini AI Cosmic Oracle — Synthesize Any 3D Universe from Natural Language"
+          >
+            <Sparkles size={14} className="text-cyan-300 group-hover:rotate-12 transition-transform animate-pulse" />
+            <span className="text-xs font-mono font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-indigo-200">
+              AI Oracle
+            </span>
+          </button>
+        )}
 
         {/* Real-time Telemetry Diagnostics Badge & Popover */}
         <div className="relative">
@@ -644,6 +662,21 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
               {/* Mobile Quick Feature Tiles */}
               <div className="grid grid-cols-2 gap-1.5 font-mono text-xs">
+                {onOpenGeminiOracle && (
+                  <button
+                    id="mobile-gemini-oracle-btn"
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onOpenGeminiOracle();
+                    }}
+                    className="col-span-2 p-2.5 rounded-xl bg-gradient-to-r from-indigo-950/80 via-purple-950/60 to-cyan-950/80 hover:from-indigo-900/90 hover:to-cyan-900/90 border border-indigo-500/50 text-cyan-200 flex items-center justify-center space-x-2 cursor-pointer shadow-md font-bold"
+                  >
+                    <Sparkles size={15} className="text-cyan-300 animate-pulse" />
+                    <span>Gemini AI Cosmic Oracle</span>
+                  </button>
+                )}
+
                 {onOpenPresets && (
                   <button
                     id="mobile-presets-btn"

@@ -26,6 +26,7 @@ interface InteractionDockProps {
   isSynesthesiaOpen?: boolean;
   onOpenSingularities?: () => void;
   singularitiesCount?: number;
+  onOpenGeminiOracle?: () => void;
 }
 
 export const InteractionDock: React.FC<InteractionDockProps> = ({
@@ -39,6 +40,7 @@ export const InteractionDock: React.FC<InteractionDockProps> = ({
   isSynesthesiaOpen,
   onOpenSingularities,
   singularitiesCount = 0,
+  onOpenGeminiOracle,
 }) => {
   const modes: { id: InteractionMode; label: string; icon: React.FC<{ size?: number }>; desc: string }[] = [
     { id: 'attract', label: 'Attract', icon: Magnet, desc: 'Gravity well singularity' },
@@ -183,6 +185,22 @@ export const InteractionDock: React.FC<InteractionDockProps> = ({
                   {singularitiesCount}
                 </span>
               )}
+            </button>
+          )}
+
+          {/* Gemini AI Cosmic Oracle Button */}
+          {onOpenGeminiOracle && (
+            <button
+              id="dock-gemini-oracle-btn"
+              type="button"
+              onClick={onOpenGeminiOracle}
+              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-gradient-to-r from-indigo-950/50 to-cyan-950/50 hover:from-indigo-900/60 hover:to-cyan-900/60 text-cyan-200 border border-indigo-500/40 hover:border-cyan-400 flex items-center justify-center space-x-1.5 transition-all cursor-pointer text-xs font-mono font-medium shadow-sm active:scale-95 shrink-0 min-h-[38px] group"
+              title="Gemini AI Cosmic Oracle (Synthesize Universe from Prompt)"
+            >
+              <Sparkles size={14} className="text-cyan-300 group-hover:rotate-12 transition-transform animate-pulse" />
+              <span className="hidden sm:inline font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-indigo-200">
+                AI
+              </span>
             </button>
           )}
         </div>

@@ -16,6 +16,7 @@ import {
   AccessibilityConfig,
   RecordingState,
   Preset,
+  GeminiUniverseSynthesis,
 } from './types';
 import { HeaderBar } from './components/HeaderBar';
 import { TopologyDock } from './components/TopologyDock';
@@ -29,6 +30,7 @@ import { SynesthesiaKeyboard } from './components/SynesthesiaKeyboard';
 import { RecordingStudioModal } from './components/RecordingStudioModal';
 import { AccessibilityModal } from './components/AccessibilityModal';
 import { PresetDrawer } from './components/PresetDrawer';
+import { GeminiCosmicOracleModal } from './components/GeminiCosmicOracleModal';
 
 const INITIAL_PARAMETRIC: ParametricParams = {
   m: 6,
@@ -124,6 +126,8 @@ export default function App() {
   const [isAccessibilityModalOpen, setIsAccessibilityModalOpen] = useState(false);
   const [isSingularitiesOpen, setIsSingularitiesOpen] = useState(false);
   const [isSynesthesiaOpen, setIsSynesthesiaOpen] = useState(false);
+  const [isGeminiOracleOpen, setIsGeminiOracleOpen] = useState(false);
+  const [liveAnnouncement, setLiveAnnouncement] = useState('');
   const [hasLowFpsWarning, setHasLowFpsWarning] = useState(false);
   const [singularities, setSingularities] = useState<GravitationalSingularity[]>([]);
   const [recordingState, setRecordingState] = useState<RecordingState>({
@@ -483,6 +487,60 @@ export default function App() {
     reader.readAsText(file);
   }, [userPresets]);
 
+  // Gemini AI Universe Synthesis application
+  const handleApplyGeminiUniverse = useCallback(
+    (synthesis: GeminiUniverseSynthesis) => {
+      if (synthesis.particleConfig) {
+        handleParticleChange(synthesis.particleConfig);
+        if (synthesis.particleConfig.topology) {
+          universeRef.current?.morphToTopology(synthesis.particleConfig.topology);
+        }
+      }
+      if (synthesis.audioConfig) {
+        handleAudioChange(synthesis.audioConfig);
+      }
+      if (synthesis.interactionMode) {
+        handleChangeInteractionMode(synthesis.interactionMode);
+      }
+      if (synthesis.cameraMode) {
+        handleCameraChange(synthesis.cameraMode);
+      }
+      if (synthesis.singularities && synthesis.singularities.length > 0) {
+        universeRef.current?.clearSingularities();
+        synthesis.singularities.forEach((s) => universeRef.current?.addSingularity(s));
+        setSingularities(synthesis.singularities);
+      }
+      universeRef.current?.triggerSupernovaShockwave();
+      audioRef.current?.triggerHarmonicChime(1.1, 4);
+      setLiveAnnouncement(`Materialized Gemini universe: ${synthesis.name}`);
+    },
+    [handleParticleChange, handleAudioChange, handleChangeInteractionMode, handleCameraChange]
+  );
+
+  const handleSaveGeminiAsPreset = useCallback(
+    (name: string, description: string, synthesis: GeminiUniverseSynthesis) => {
+      const newPreset: Preset = {
+        id: `gemini-${Date.now()}`,
+        name: name || 'Gemini AI Cosmos',
+        description: description || 'Synthesized by Gemini AI Oracle',
+        category: 'user',
+        createdAt: Date.now(),
+        particleConfig: { ...particleConfig, ...(synthesis.particleConfig || {}) },
+        audioConfig: { ...audioConfig, ...(synthesis.audioConfig || {}) },
+        interactionMode: synthesis.interactionMode || interactionMode,
+        cameraMode: synthesis.cameraMode || cameraMode,
+        singularities: synthesis.singularities || singularities,
+      };
+      const combined = [newPreset, ...userPresets];
+      setUserPresets(combined);
+      saveUserPresets(combined);
+      setActivePresetId(newPreset.id);
+      audioRef.current?.triggerHarmonicChime(1.0, 3);
+      setLiveAnnouncement(`Saved ${newPreset.name} to presets`);
+    },
+    [particleConfig, audioConfig, interactionMode, cameraMode, singularities, userPresets]
+  );
+
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -513,6 +571,8 @@ export default function App() {
         setIsRecordingModalOpen((prev) => !prev);
       } else if (key === 'a') {
         setIsAccessibilityModalOpen((prev) => !prev);
+      } else if (key === 'g') {
+        setIsGeminiOracleOpen((prev) => !prev);
       } else if (key === 'm') {
         handleAudioChange({ enabled: !audioConfig.enabled });
       }
@@ -581,6 +641,7 @@ export default function App() {
         hasLowFpsWarning={hasLowFpsWarning}
         onToggleSynesthesiaKeys={() => setIsSynesthesiaOpen((prev) => !prev)}
         isSynesthesiaOpen={isSynesthesiaOpen}
+        onOpenGeminiOracle={() => setIsGeminiOracleOpen(true)}
       />
 
       {/* Mobile Backdrop Scrim when a drawer is open */}
@@ -635,6 +696,7 @@ export default function App() {
         isSynesthesiaOpen={isSynesthesiaOpen}
         onOpenSingularities={() => setIsSingularitiesOpen(true)}
         singularitiesCount={singularities.length}
+        onOpenGeminiOracle={() => setIsGeminiOracleOpen(true)}
       />
 
       {/* Musical Synesthesia Resonant Floating Keyboard */}
@@ -761,6 +823,25 @@ export default function App() {
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
       />
+
+      {/* Gemini AI Cosmic Universe Synthesizer Modal */}
+      <GeminiCosmicOracleModal
+        isOpen={isGeminiOracleOpen}
+        onClose={() => setIsGeminiOracleOpen(false)}
+        onApplyUniverse={handleApplyGeminiUniverse}
+        onSaveAsPreset={handleSaveGeminiAsPreset}
+      />
+
+      {/* Accessibility Screen Reader Live Announcer */}
+      <div
+        id="a11y-live-announcer"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {liveAnnouncement}
+      </div>
     </div>
   );
 }

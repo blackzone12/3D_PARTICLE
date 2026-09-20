@@ -17,7 +17,7 @@ interface UserGuideModalProps {
 }
 
 export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
-  const [activeSection, setActiveSection] = useState<'quickstart' | 'forces' | 'shapes' | 'optics' | 'audio' | 'shortcuts'>('quickstart');
+  const [activeSection, setActiveSection] = useState<'quickstart' | 'gemini' | 'forces' | 'shapes' | 'optics' | 'audio' | 'shortcuts'>('quickstart');
 
   if (!isOpen) return null;
 
@@ -49,6 +49,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
         <div className="flex border-b border-slate-800/80 bg-slate-950/40 px-3 sm:px-4 py-2 overflow-x-auto space-x-1">
           {[
             { id: 'quickstart', label: 'Quick Start', icon: MousePointer },
+            { id: 'gemini', label: '✨ Gemini AI', icon: Sparkles },
             { id: 'forces', label: 'Force Fields & Wells', icon: Zap },
             { id: 'shapes', label: 'Infinite Shapes', icon: Sparkles },
             { id: 'audio', label: 'Synesthesia & Audio', icon: Music },
@@ -111,6 +112,42 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">CINEMATIC</span> Autonomous orbital drift
                   <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">DIVE</span> Singularity core dive
                   <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">TOP</span> Symmetrical overhead view
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'gemini' && (
+            <div className="space-y-4">
+              <div className="p-3.5 rounded-xl bg-gradient-to-r from-indigo-950/40 via-purple-950/30 to-cyan-950/40 border border-indigo-500/40">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-indigo-200">
+                    Gemini AI Cosmic Oracle (Gemini 3.8 Flash)
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-950 text-indigo-300 border border-indigo-700/50">
+                    Generative Intelligence
+                  </span>
+                </div>
+                <p className="text-slate-300 text-xs leading-relaxed">
+                  Translate natural language imagination, cosmological prompts, and poetic descriptions into mathematically coherent 3D particle topologies, parametric superformulas, and custom microtonal audio soundscapes in real-time.
+                </p>
+              </div>
+
+              <div className="space-y-2.5">
+                <h4 className="font-mono text-slate-200 text-xs font-semibold uppercase tracking-wider">How to Synthesize a Universe:</h4>
+                <div className="space-y-2 text-[11px] text-slate-300">
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                    <strong className="text-cyan-300 block mb-1">1. Click AI Oracle or Press 'G'</strong>
+                    <p className="text-slate-400">Launch the Oracle modal from the HeaderBar or bottom Dock.</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                    <strong className="text-purple-300 block mb-1">2. Provide Any Prompt or Click Inspiration Seeds</strong>
+                    <p className="text-slate-400">Type concepts like <em>"A bioluminescent abyssal jellyfish with pentatonic drone"</em> or <em>"Kerr rotating black hole event horizon"</em>.</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                    <strong className="text-emerald-300 block mb-1">3. Materialize &amp; Save</strong>
+                    <p className="text-slate-400">Gemini generates parametric formulas, color themes, and harmonic chords. Click <strong>Materialize Universe</strong> to morph your canvas, or <strong>Save as Preset</strong> for later.</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -289,6 +326,10 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   <div className="grid grid-cols-2 p-2.5">
                     <span>Quantum Thermal Kick</span>
                     <span className="text-cyan-300">Q / Dock Button</span>
+                  </div>
+                  <div className="grid grid-cols-2 p-2.5">
+                    <span>Gemini AI Cosmic Oracle</span>
+                    <span className="text-cyan-300">G / Header AI Oracle</span>
                   </div>
                   <div className="grid grid-cols-2 p-2.5">
                     <span>Auto Tour Choreography</span>

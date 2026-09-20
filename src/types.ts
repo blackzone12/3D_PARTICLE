@@ -135,3 +135,14 @@ export interface AccessibilityConfig {
   colorBlindMode?: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia';
   soundDescriptions?: boolean;
 }
+
+export interface GeminiUniverseSynthesis {
+  name: string;
+  lore: string;
+  particleConfig: Partial<ParticleConfig>;
+  audioConfig: Partial<AudioConfig>;
+  interactionMode?: InteractionMode;
+  cameraMode?: CameraMode;
+  singularities?: GravitationalSingularity[];
+}
+
